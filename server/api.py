@@ -30,7 +30,7 @@ def build_query_string(query_dict):
     select_string += selected_string
 
     # from_string = 'FROM ' + query_dict['device']
-    from_string = 'FROM ' + 'mp0'
+    from_string = 'FROM ' + 'SB'
     where_string = 'WHERE ' + 'time > now() - 48h'
     # groupby_string = 'GROUP BY time(' + query_dict['timeaggstring'] + ')'
     groupby_string = 'GROUP BY time(1m)'
@@ -39,6 +39,11 @@ def build_query_string(query_dict):
     query_string = ' '.join([select_string, from_string, where_string, groupby_string])
 
     return query_string
+
+
+@app.route('/api/hello', methods=['GET'])
+def hello():
+    return 'Hello World'
 
 
 @app.route('/api/write', methods=['POST'])
@@ -70,4 +75,4 @@ def querydb():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
