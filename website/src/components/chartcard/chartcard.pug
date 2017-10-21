@@ -1,0 +1,7 @@
+div.chartcard
+    .charttitlebar
+        .charttitlediv
+            each value, key in items
+                .chartoption(id=value.id, data-values=value.values)= key
+        #basicchartlegend.chartlegenddiv
+    #basicchart.chartdiv

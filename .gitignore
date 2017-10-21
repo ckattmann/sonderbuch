@@ -1,0 +1,9 @@
+*/__pycache__
+website/node_modules
+
+*.swp
+*.swo
+*.pyc
+
+*.json
+!server/dbcredentials.json
