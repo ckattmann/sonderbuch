@@ -5,7 +5,6 @@ import math
 import modbus_tk.defines as cst
 import modbus_tk.modbus_tcp as modbus_tcp
 
-holdregs = cst.READ_HOLDING_REGISTERS
 
 data_info = [
         {'startadress': 800, 'names': ['f']},
