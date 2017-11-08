@@ -8,29 +8,26 @@
     .charttitlebar
         display: flex
         flex-direction: row
+        align-items: center
         color: #444
         margin-bottom: 10px
         padding: 8px
-        border-bottom: 2px solid gray
         box-shadow: 1px 2px 5px 0px #FBFBFB
-        box-shadow: 1px 4px 3px 0px lightgray
-        .charttitlediv
-            padding: 5px
+        background-color: lightgreen
+        .chartoption
+            margin-left: 10px
+            background: whitesmoke
+            border-radius: 14px
+            padding: 8px
+            padding-left: 10px
+            padding-right: 10px
             font-weight: 600
-            display: flex
-            .chartoption
-                margin-left: 10px
-                background: whitesmoke
-                border-radius: 14px
-                padding: 5px
-                padding-left: 10px
-                padding-right: 10px
-                border: 3px solid transparent
-                &:hover
-                    cursor: pointer
-                    background: lightgray
-            .chartoption.selected
+            &:hover
+                cursor: pointer
+                background: lightgray
+            &.selected
                 background: linear-gradient(to bottom right,#086bc2,#2c9dd1)
+                color: white
         .chartlegenddiv
             padding: 5px
             flex-grow: 1
@@ -43,3 +40,7 @@
         margin: 5px
         margin-bottom: 10px
         margin-right: 10px
+        .infobar
+            position: absolute
+            height: 50px
+            background-color: red

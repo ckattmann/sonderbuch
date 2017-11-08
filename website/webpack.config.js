@@ -2,6 +2,7 @@ const path = require("path");
 const webpack = require("webpack");
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const WebpackDashboard = require('webpack-dashboard/plugin');
 
 module.exports = {
     entry: './src/main.js',
@@ -13,7 +14,7 @@ module.exports = {
         contentBase: path.resolve(__dirname,'src','assets'),
         proxy: {
             '/api': {
-                target: 'http://localhost:5000',
+                target: 'http://localhost:13331',
                 secure: false,
                 // disableHostCheck: true
             },
@@ -25,6 +26,7 @@ module.exports = {
             {
                 test: /\.pug/,
                 use: [
+                    // { loader: 'html-loader' },
                     { loader: 'pug-loader' }
                 ]
             },
@@ -46,19 +48,24 @@ module.exports = {
             {
                 test: /\.png/,
                 use: [
-                    { loader: 'file-loader' }
+                    { loader: 'file-loader',
+                        options: {
+                            name: '[name]_[hash:7].[ext]',
+                        }
+                    }
                 ]
             },
         ]
     },
     plugins: [
-        new CleanWebpackPlugin(['dist']),
+        // new CleanWebpackPlugin(['dist']),
         new HtmlWebpackPlugin({
             title: 'BSS Hochspannungstechnik',
             template : './src/index.pug',
         }),
         new webpack.ProvidePlugin({
             $: 'jquery'
-        })
+        }),
+        new WebpackDashboard(),
     ]
 }

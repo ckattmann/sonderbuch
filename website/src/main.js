@@ -1,6 +1,8 @@
 // import purecss from 'purecss';
 import Dygraph from 'dygraphs/index.es5.js';
 
+import bsslogo from './assets/bss_small.png';
+
 import indexhtml from './index.pug';
 import indexsass from './index.sass';
 
@@ -11,6 +13,9 @@ import firstviewhtml from './components/firstview/firstview.pug';
 import firstviewsass from './components/firstview/firstview.sass';
 
 import secondviewhtml from './components/secondview/secondview.pug';
+
+import view_simple_html from './components/dataview-simple/dataview-simple.pug';
+import view_simple_sass from './components/dataview-simple/dataview-simple.sass';
 
 
 function barChartPlotter(e) {
@@ -45,9 +50,6 @@ function barChartPlotter(e) {
 
 $(document).ready(function() {
 
-    // Helper Functions
-
-
     $('#link-first').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
@@ -56,8 +58,11 @@ $(document).ready(function() {
         $('#mainarea').append(firstviewhtml());
         var data = {items: {
             'Voltage': {id: 'voltage', values: 'U1,U2,U3'},
+            'THD': {id: 'thd', values: 'THDU1,THDU2,THDU3'},
             'Current': {id: 'current', values: 'I1,I2,I3'},
-            'THD': {id: 'thd', values: 'THDU1,THDU2,THDU3'}
+            'TDD': {id: 'thd', values: 'TDDI1,TDDI2,TDDI3'},
+            'Real Power': {id: 'P', values: 'P1,P2,P3'},
+            'Power Factor': {id: 'PF', values: 'PF1,PF2,PF3'},
         }};
         $('#powerchart').append(chartcardhtml(data));
 
@@ -98,15 +103,15 @@ $(document).ready(function() {
         }
 
         $('.chartoption').click(function(el){
-            updateDygraph({values: el.currentTarget.dataset.values});
+            $(el.currentTarget).siblings().removeClass('selected');
+            $(el.currentTarget).addClass('selected');
+            var avrginterval = $('#avrgtimeinput').val();
+            var requestDict = {values: el.currentTarget.dataset.values, avrginterval: avrginterval};
+            console.log(requestDict);
+            updateDygraph(requestDict);
         });
 
-        var req = {
-            values: 'THDU1',
-        };
-
-        updateDygraph(req);
-
+        $('#voltage').click();
     });
 
 
@@ -133,5 +138,13 @@ $(document).ready(function() {
         );
     });
 
-    $('#link-first').click();
+    $('#link-view-simple').click(function() {
+        $('.sidebar-link').removeClass('selected');
+        $(this).addClass('selected');
+        $('#mainarea').empty();
+
+        $('#mainarea').append(view_simple_html());
+    });
+
+    $('#link-view-simple').click();
 });
