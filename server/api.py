@@ -2,7 +2,7 @@ import json
 import pprint
 
 from flask import Flask, request, jsonify
-from influxdb import InfluxDBClient
+import influxdb
 
 app = Flask(__name__)
 
@@ -10,7 +10,7 @@ app = Flask(__name__)
 # Load Database Credentials
 with open('dbcredentials.json', 'r') as f:
     credentials = json.loads(f.read())
-CLIENT = InfluxDBClient(**credentials)
+CLIENT = influxdb.InfluxDBClient(**credentials)
 
 
 def build_query_string(query_dict):
@@ -57,13 +57,18 @@ def querydb():
             query_dict['values'] = query_dict['values'].split(',')
         else:
             query_dict['values'] = [query_dict['values']]
-    
+
     if 'avrginterval' not in query_dict:
         query_dict['avrginterval'] = '10m'
 
 
     query_string = build_query_string(query_dict)
-    query_result = CLIENT.query(query_string, epoch='ms')  #ms plays nicely with Dygraphs
+    try:
+        query_result = CLIENT.query(query_string, epoch='ms')  #ms plays nicely with Dygraphs
+    except influxdb.exceptions.InfluxDBClientError:
+        print('DB not found?')
+        raise
+
     try:
         data = query_result.raw['series'][0]['values']
     except:
@@ -74,7 +79,7 @@ def querydb():
     labels = ['time']
     labels.extend(query_dict['values'])
 
-    print('Transmitting ',len(data), ' datapoints')
+    print('Transmitting ', len(data), ' datapoints')
 
     return jsonify({'data':data, 'labels':labels})
 
