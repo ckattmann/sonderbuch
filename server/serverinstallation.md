@@ -48,4 +48,19 @@ WorkingDirectory=/home/ckattmann/Sonderbuch/server
 ExecStart=/home/ckattmann/anaconda3/bin/uwsgi --ini uwsgi.ini
 [Install]
 WantedBy=multi-user.target
- 
+```
+
+```apache 
+server {
+    listen 13331;
+    server_name localhost;
+
+    root /home/ckattmann/Sonderbuch/website/dist;
+    index index.html;
+
+    location /api {
+        include uwsgi_params;
+        uwsgi_pass unix:/home/ckattmann/Sonderbuch/server/api.sock;
+    }
+}
+```
