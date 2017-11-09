@@ -4,8 +4,6 @@ import pprint
 from flask import Flask, request, jsonify
 from influxdb import InfluxDBClient
 
-import queryfunctions
-
 app = Flask(__name__)
 
 
