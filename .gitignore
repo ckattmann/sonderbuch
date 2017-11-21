@@ -10,4 +10,4 @@ website2/node_modules
 server/dbcredentials.json
 !website/package.json
 
-deployment
+deploy.sh
