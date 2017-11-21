@@ -1,5 +1,7 @@
 import json
-import pprint
+import time
+# import datetime
+# import pprint
 
 from flask import Flask, request, jsonify
 import influxdb
@@ -13,6 +15,16 @@ with open('dbcredentials.json', 'r') as f:
 CLIENT = influxdb.InfluxDBClient(**credentials)
 
 
+def parse_timeInterval(timeInterval):
+    shortcuts = {'today': 'time > now() - 24h',
+                 'lastweek': 'time > now() - 168h'}
+    if timeInterval in shortcuts:
+        parsed_timeInterval = shortcuts[timeInterval]
+    else:
+        parsed_timeInterval = timeInterval
+    return parsed_timeInterval
+
+
 def build_query_string(query_dict):
     ''' Build an IndexQL query string from the given dictionary '''
 
@@ -24,13 +36,16 @@ def build_query_string(query_dict):
     else:
         print('selected_string', repr(query_dict['values']))
 
-    # selected_string = 'mean(' + ','.join(['mean('+v+')' for v in query_dict['values']]) + ')'
     select_string += selected_string
 
     # from_string = 'FROM ' + query_dict['device']
     from_string = 'FROM ' + 'SB'
-    where_string = 'WHERE ' + 'time > now() - 1680h'
-    groupby_string = 'GROUP BY time('+query_dict['avrginterval']+')'
+
+    # WHERE
+    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'])
+
+    # GROUPBY
+    groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
 
     query_string = ' '.join([select_string, from_string, where_string, groupby_string])
 
@@ -45,7 +60,14 @@ def hello():
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
     data = request.get_json()
+
+    # Write data to InfluxDB database
     CLIENT.write_points(data, time_precision='s')
+
+    # Additionally write latest json to file for quick retrieval of status
+    # address = data['tags']['address']
+    # with open()
+
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
 
@@ -58,13 +80,14 @@ def querydb():
         else:
             query_dict['values'] = [query_dict['values']]
 
-    if 'avrginterval' not in query_dict:
-        query_dict['avrginterval'] = '10m'
-
+    if 'avrgInterval' not in query_dict:
+        query_dict['avrgInterval'] = '10m'
 
     query_string = build_query_string(query_dict)
     try:
-        query_result = CLIENT.query(query_string, epoch='ms')  #ms plays nicely with Dygraphs
+        query_starttime = time.time()
+        query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
+        print('Query Time', time.time() - query_starttime)
     except influxdb.exceptions.InfluxDBClientError:
         print('DB not found?')
         raise
@@ -79,9 +102,18 @@ def querydb():
     labels = ['time']
     labels.extend(query_dict['values'])
 
-    print('Transmitting ', len(data), ' datapoints')
-
     return jsonify({'data':data, 'labels':labels})
+
+
+@app.route('/api/status', methods=['GET'])
+def get_status():
+    # req = request.args.to_dict()
+    result = CLIENT.query('SELECT LAST(U1),U2,U3 from SB', epoch='ms')
+    status = list(result.get_points())[0]
+    print(status['time'])
+
+    # print(datetime.datetime.fromtimestamp(int(status['time'])))
+    return jsonify({'status':status})
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ import modbus_tk.defines as cst
 import modbus_tk.modbus_tcp as modbus_tcp
 
 
-data_info = [
+modbus_data_info = [
         {'startadress': 800, 'names': ['f']},
         {'startadress': 808, 'names': ['U1','U2','U3']},
         {'startadress': 828, 'names': ['PF1','PF2','PF3']},
@@ -31,10 +31,10 @@ def get_modbus_point(master, startadress, numbytes, fmt):
     return master.execute(slave, func_code, startadress, numbytes, data_format=fmt)
 
 
-def get_modbus_data(master, data_info):
+def get_modbus_data(master, modbus_data_info):
     datapoint = {}
 
-    for info in data_info:
+    for info in modbus_data_info:
         numfloats = len(info['names'])
         result = get_modbus_point(master, info['startadress'], numfloats*2, '>'+'f'*numfloats)
         for name, value in zip(info['names'], result):
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     while True:
         loopstart = time.time()
-        datapoint = get_modbus_data(master, data_info)
+        datapoint = get_modbus_data(master, modbus_data_info)
         timestamp = int(time.time())
         datadict = {
             'measurement': 'SB',
