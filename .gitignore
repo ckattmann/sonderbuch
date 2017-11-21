@@ -7,5 +7,7 @@ website2/node_modules
 *.pyc
 
 *.json
-!server/dbcredentials.json
+server/dbcredentials.json
 !website/package.json
+
+deployment
