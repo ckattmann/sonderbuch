@@ -16,8 +16,10 @@ CLIENT = influxdb.InfluxDBClient(**credentials)
 
 
 def parse_timeInterval(timeInterval):
-    shortcuts = {'today': 'time > now() - 24h',
-                 'lastweek': 'time > now() - 168h'}
+    shortcuts = {'last24h': 'time > now() - 24h',
+                 'last7d': 'time > now() - 168h',
+                 'today': 'time > now() - 24h',
+                 'thisweek': 'time > now() - 168h'}
     if timeInterval in shortcuts:
         parsed_timeInterval = shortcuts[timeInterval]
     else:
@@ -39,7 +41,7 @@ def build_query_string(query_dict):
     select_string += selected_string
 
     # from_string = 'FROM ' + query_dict['device']
-    from_string = 'FROM ' + 'SB'
+    from_string = 'FROM ' + 'netzmonitor'
 
     # WHERE
     where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'])
@@ -108,11 +110,12 @@ def querydb():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     # req = request.args.to_dict()
-    result = CLIENT.query('SELECT LAST(U1),U2,U3 from SB', epoch='ms')
+    result = CLIENT.query('SELECT LAST(U1),U2,U3 from netzmonitor', epoch='ms')
     status = list(result.get_points())[0]
-    print(status['time'])
 
-    # print(datetime.datetime.fromtimestamp(int(status['time'])))
+    with open('lastStatus.json','w') as f:
+        f.write(json.dumps(status))
+
     return jsonify({'status':status})
 
 
