@@ -1,7 +1,19 @@
 div.chartcard
     .charttitlebar
-        .charttitlediv
-            each value, key in items
-                .chartoption(id=value.id, data-values=value.values)= key
+        .bartitle Location:
+        .chartoption Störzbachstraße 15
+    .charttitlebar
+        .bartitle Values:
+        each value, key in items
+            .chartoption(id=value.id, data-values=value.values)= key
         #basicchartlegend.chartlegenddiv
+    #timeselectbar.charttitlebar
+        .bartitle Time Interval:
+        .chartoption#timetoday Today
+        .chartoption#timethisweek This Week
+    .charttitlebar
+        .bartitle Aggregation:
+        .chartoption
+            div Averaging:
+            input#avrgtimeinput(pattern="^[1-9]\d*[smhdw]$", value="10m")
     #basicchart.chartdiv

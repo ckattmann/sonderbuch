@@ -1,0 +1,21 @@
+#container-view-simple
+    .charttitlebar
+        display: flex
+        background-color: gray
+        .chartoption
+            padding: 15px
+            margin-right: 10px
+            color: white
+            &:hover
+                background-color: #AAA
+                cursor: pointer
+            .select-content
+                display: none
+                position: absolute
+                z-index: inherit
+                width: 150px
+                &:hover .select-content
+                    display: block
+                span
+                    display: flex
+                    background-color: gray
