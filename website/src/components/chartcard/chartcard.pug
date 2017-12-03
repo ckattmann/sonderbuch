@@ -1,19 +1,30 @@
 div.chartcard
-    .charttitlebar
-        .bartitle Location:
-        .chartoption Störzbachstraße 15
-    .charttitlebar
-        .bartitle Values:
-        each value, key in items
-            .chartoption(id=value.id, data-values=value.values)= key
-        #basicchartlegend.chartlegenddiv
-    #timeselectbar.charttitlebar
-        .bartitle Time Interval:
-        .chartoption#timetoday Today
-        .chartoption#timethisweek This Week
-    .charttitlebar
-        .bartitle Aggregation:
-        .chartoption
-            div Averaging:
-            input#avrgtimeinput(pattern="^[1-9]\d*[smhdw]$", value="10m")
+    #charttitle-container
+        #chartselection-container
+            .charttitlebar
+                .bartitle Location:
+                select.select-location 
+                    optgroup(label='Sonderbuch')
+                    optgroup(label='Sonstige')
+                        option(value='001') Störzbachstraße 15
+            #container-values.charttitlebar
+                .bartitle Values:
+                #values-options.option-container
+                    each desc, key in values
+                        .chartoption(id=desc.id, data-values=desc.values)= key
+            #timeselectbar.charttitlebar
+                .bartitle Time Interval:
+                #timeInterval-options.option-container
+                    each desc, key in timeIntervals
+                        .chartoption(id=desc.id, data-timeinterval=desc.values)= key
+            #container-aggregation.charttitlebar
+                .bartitle Aggregation:
+                input#input-aggtime(value="10")
+                select#select-timeUnit 
+                    option(value='s') Seconds
+                    option(value='m',selected='selected') Minutes
+                    option(value='h') Hours
+                    option(value='d') Day
+                    option(value='w') Weeks
+        #chartlegend.chartlegenddiv
     #basicchart.chartdiv

@@ -14,7 +14,7 @@ module.exports = {
         contentBase: path.resolve(__dirname,'src','assets'),
         proxy: {
             '/api': {
-                target: 'http://localhost:5000',
+                target: 'http://129.69.127.226:13333',
                 secure: false,
                 disableHostCheck: true
             },

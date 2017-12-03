@@ -5,42 +5,67 @@
     flex-direction: column
     box-shadow: 2px 2px 8px 4px whitesmoke
     padding: 10px
-    .charttitlebar
+    #charttitle-container
         display: flex
         flex-direction: row
+        justify-content: space-between
         align-items: center
-        color: #444
-        // margin-bottom: 10px
-        // padding: 8px
-        // box-shadow: 1px 2px 5px 0px #FBFBFB
-        // background-color: lightgreen
-        .bartitle
-            width: 150px
-            margin-left: 10px
-        .chartoption
+        margin-bottom: 10px
+        #chartselection-container
+            .charttitlebar
+                display: flex
+                flex-direction: row
+                align-items: center
+                color: #444
+                margin-bottom: 4px
+                .bartitle
+                    width: 150px
+                    margin-left: 10px
+                select.select-location
+                    width: 300px
+                .chartoption
+                    display: flex
+                    align-items: center
+                    box-shadow: inset 0px 0px 2px 1px #EEE
+                    padding: 3px
+                    padding-left: 10px
+                    padding-right: 10px
+                    font-weight: 600
+                    &:hover
+                        cursor: pointer
+                        background: lightgray
+                        box-shadow: none
+                    &.selected
+                        background: linear-gradient(to bottom right,#086bc2,#2c9dd1)
+                        color: white
+                        box-shadow: none
+                    input
+                        &[type='text']
+                            font-size: 14px
+                            font-family: 'Roboto'
+ 
+                .option-container
+                    display: flex
+                    border: 1px solid #AAA
+                    border-radius: 3px
+
+            #container-aggregation
+                input
+                    width: 50px
+                    height: 28px
+                    margin-right: 10px
+                    border: 1px solid #AAA
+                    text-align: center
+                    border-radius: 3px
+                select
+                    width: 100px
+                    height: 28px
+
+        #chartlegend
             display: flex
-            align-items: center
-            margin-left: 1px
-            margin-bottom: 1px
-            background: whitesmoke
-            // border-radius: 14px
-            padding: 8px
-            padding-left: 10px
-            padding-right: 10px
-            font-weight: 600
-            &:hover
-                cursor: pointer
-                background: lightgray
-            &.selected
-                background: linear-gradient(to bottom right,#086bc2,#2c9dd1)
-                color: white
-        .chartlegenddiv
-            padding: 5px
-            flex-grow: 1
-            display: flex
-            justify-content: flex-end
-            align-items: center
-            // color: gray
+            flex-direction: row
+            span
+                padding-left: 5px
     .chartdiv
         flex-grow: 1
         margin: 5px

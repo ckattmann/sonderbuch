@@ -1,0 +1,33 @@
+.leaflet-tooltip
+    background-color: gray !important
+    border: 1px solid darkgray !important
+
+.leaflet-tooltip-right.mapTooltip
+    &:before
+        border-right-color: gray !important
+
+#tooltip
+    font-size: 16px
+    color: white
+    table
+        font-size: 16px
+        color: white
+        font-family: monospace
+        tr
+            td
+                text-align: right
+                white-space: nowrap
+                width: 8em
+                // border: 1px solid gray
+
+                &:first-child
+                    text-align: left
+                &:not(:first-child) 
+                    &:not(:last-child)
+                        font-weight: 600
+                &:not(:last-child)
+                    padding-right: 5px
+            
+    .timeSinceLastStatus
+        font-size: 12px
+        text-align: right

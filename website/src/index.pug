@@ -2,16 +2,20 @@ doctype html5
 html
     head
         title BSS Netzmonitor
-        //- link(href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet")
+        meta(charset="UTF-8")
+        link(href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet")
+
+        link(href="https://fonts.googleapis.com/css?family=Noto+Sans" rel="stylesheet")
+
 
     body
         #sidebar
             #link-title 
                 img(src=require('./assets/bss_small.png'))
                 span Netzmonitor
-            .sidebar-link#link-map Karte
+            .sidebar-link#link-map Map
             .sidebar-link#link-first Data
-            .sidebar-link#link-second Bar Chart
-            .sidebar-link#link-view-simple Dataview simple
+            //- .sidebar-link#link-second Bar Chart
+            //- .sidebar-link#link-view-simple Dataview simple
             .sidebar-link#link-status Status
         #mainarea
