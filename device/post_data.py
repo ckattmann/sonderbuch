@@ -14,7 +14,8 @@ with open('configuration.json','r') as f:
 
 def postdata(datapoints, files):
     try:
-        r = requests.post('http://'+SERVER_IP+'/api/write', json=datapoints)
+        json = {'grid': CONF['grid'], 'datapoints':datapoints}
+        r = requests.post('http://'+SERVER_IP+'/api/write', json=json)
         if r.status_code == 200:
             [os.remove(f) for f in files]
             print('POSTed to '+ip+' until ', end=' ')

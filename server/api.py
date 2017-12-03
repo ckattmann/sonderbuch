@@ -98,10 +98,12 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
-    data = request.get_json()
+    req = request.get_json()
+    database = req['grid']
+    datapoints = req['datapoints']
 
     # Write data to InfluxDB database
-    CLIENT.write_points(data, time_precision='s')
+    CLIENT.write_points(datapoints, database=database, time_precision='s')
 
     # Additionally write latest json to file for quick retrieval of status
     # address = data['tags']['address']
