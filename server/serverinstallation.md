@@ -22,6 +22,7 @@ pip install influxdb
 
 ## Setup UWSGI
 ```bash
+sudo apt-get install python-dev
 pip install uwsgi
 ```
 uwsgi ini file
@@ -49,10 +50,10 @@ ExecStart=/home/ckattmann/anaconda3/bin/uwsgi --ini uwsgi.ini
 [Install]
 WantedBy=multi-user.target
 ```
-
+Nginx Cofiguration in /etc/nginx/sites-available
 ```apache 
 server {
-    listen 13331;
+    listen 13333;
     server_name localhost;
 
     root /home/ckattmann/Sonderbuch/website/dist;
