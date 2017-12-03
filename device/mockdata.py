@@ -9,7 +9,7 @@ def write_dataset(verbose=False):
     timestamp = int(time.time())
 
     datadict = {
-        'measurement': 'mp0',
+        'measurement': 'netzmonitor',
         'time': timestamp,
         'fields': {
             'f': 49.9 + (np.random.random() * 0.2),
@@ -33,12 +33,14 @@ def write_dataset(verbose=False):
             'Q3': 400 + (np.random.random() * 4000)
         },
         'tags': {
-            'Address': 'Goldene Gasse 1',
-            'angeschlossen': 'Haushalt'
+            'address': 'Beckengasse 14',
+            'type': 'Haushalt',
+            'coordinates': '48.25422,9.48291',
+            'grid': 'SONDZ-E-UST-002',
         }
     }
 
-    with open(str(timestamp)+'.json', 'w') as f:
+    with open('data/'+str(timestamp)+'.json', 'w') as f:
         f.write(json.dumps(datadict))
 
     if verbose:
