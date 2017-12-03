@@ -48,7 +48,7 @@ def build_query_string(query_dict):
     select_string += selected_string
 
     # FROM
-    from_string = 'FROM ' + 'netzmonitor'
+    from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
 
     # WHERE
     where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'])
@@ -64,6 +64,8 @@ def build_query_string(query_dict):
 @app.route('/api/query', methods=['GET'])
 def querydb():
     query_dict = request.args.to_dict()
+
+    # Preprocess the request
     if isinstance(query_dict['values'], str):
         if ',' in query_dict['values']:
             query_dict['values'] = query_dict['values'].split(',')
@@ -73,9 +75,11 @@ def querydb():
     if 'avrgInterval' not in query_dict:
         query_dict['avrgInterval'] = '10m'
 
+    # Build the query string and perform the request
     query_string = build_query_string(query_dict)
     try:
         query_starttime = time.time()
+        CLIENT.switch_database(query_dict['grid'])
         query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
         print('Query Time', time.time() - query_starttime)
     except influxdb.exceptions.InfluxDBClientError:
@@ -83,6 +87,7 @@ def querydb():
         print(query_string)
         raise
 
+    # Parse Result:
     try:
         data = query_result.raw['series'][0]['values']
     except:
@@ -102,6 +107,9 @@ def write_to_db():
     database = req['grid']
     datapoints = req['datapoints']
 
+    if database not in [d['name'] for d in CLIENT.get_list_database()]:
+        CLIENT.create_database(database)
+
     # Write data to InfluxDB database
     CLIENT.write_points(datapoints, database=database, time_precision='s')
 
@@ -115,9 +123,22 @@ def write_to_db():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     # req = request.args.to_dict()
-    result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from netzmonitor', epoch='ms')
-    status = list(result.get_points())[0]
-    status['U1'] = status['last']
+    status = {}
+    # result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from netzmonitor', epoch='ms')
+    # status = list(result.get_points())[0]
+    # status['U1'] = status['last']
+
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
+    status['grids'] = {}
+    for db in available_databases:
+        CLIENT.switch_database(db)
+        status['grids'][db] = {}
+        for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
+            print(location)
+            result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from "'+location+'"', epoch='ms')
+            result = list(result.get_points())[0]
+            result['U1'] = result.pop('last')
+            status['grids'][db][location] = result
 
     return jsonify({'status':status})
 

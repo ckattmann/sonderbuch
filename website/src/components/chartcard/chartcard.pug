@@ -1,22 +1,23 @@
 div.chartcard
     #charttitle-container
         #chartselection-container
+
             .charttitlebar
                 .bartitle Location:
-                select.select-location 
-                    optgroup(label='Sonderbuch')
-                    optgroup(label='Sonstige')
-                        option(value='001') Störzbachstraße 15
+                select#select-location.select-location 
+
             #container-values.charttitlebar
                 .bartitle Values:
                 #values-options.option-container
                     each desc, key in values
                         .chartoption(id=desc.id, data-values=desc.values)= key
+
             #timeselectbar.charttitlebar
                 .bartitle Time Interval:
                 #timeInterval-options.option-container
                     each desc, key in timeIntervals
                         .chartoption(id=desc.id, data-timeinterval=desc.values)= key
+
             #container-aggregation.charttitlebar
                 .bartitle Aggregation:
                 input#input-aggtime(value="10")
@@ -26,5 +27,6 @@ div.chartcard
                     option(value='h') Hours
                     option(value='d') Day
                     option(value='w') Weeks
+
         #chartlegend.chartlegenddiv
     #basicchart.chartdiv

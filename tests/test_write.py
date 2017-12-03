@@ -20,6 +20,13 @@ def write_to_db(data):
 
     return 0
 
+available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
+
+for db in available_databases:
+    print(db)
+    CLIENT.switch_database(db)
+    print([d for d in list(CLIENT.get_list_measurements())])
+
 timestamp = int(time.time())
 datapoint = {'U1':230.0, 'THDU1':2.3, 'I1':0.06}
 postdict = {

@@ -1,15 +1,39 @@
 table#statustable
-    margin: 10px
+    margin: 20px
+    margin-left: 40px
     border-collapse: collapse    
-    box-shadow: 1px 1px 2px 4px whitesmoke
-    // width: 100%
-    .statusrow
-        // border: 1px solid lightgray
-        // border-bottom: 2px solid transparent
-        // box-shadow: 1px 1px 2px 4px whitesmoke
+    td
+        padding-top: 4px
+        padding-bottom: 4px
+    tr.header
+        color: #333
+        font-size: 20
+        &:hover
+            cursor: pointer
+            background-color: #FBFBFB
         td
-            border: 1px solid gray
-            margin-right: 10px
-            padding: 10px
-        .secondssinceupdate
-            text-align: right
+            border-bottom: 1px solid #333
+        &:not(:first-child)
+            td
+                padding-top: 20px
+
+    tr.columntitles
+        td
+            font-size: 12
+            color: darkgray
+            &:first-child
+                padding-left: 25px
+            &:not(:first-child)
+                text-align: right
+    
+    tr.gridrow
+        &:hover
+            cursor: pointer
+            background-color: #FBFBFB
+        td 
+            &:first-child
+                font-weight: 700
+                padding-left: 25px
+            &:not(:first-child)
+                padding-left: 25px
+                text-align: right

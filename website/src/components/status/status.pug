@@ -1,1 +1,17 @@
 table#statustable
+    each desc, gridname in grids
+        tr.header
+            td(colspan=999) #{gridname}
+        tr.columntitles
+            td ID
+            td U1
+            td U2
+            td U2
+            td Last Status
+        each location, location_id in desc
+            tr.gridrow
+                td.location_id #{location_id}
+                td.U1 #{location.U1} V
+                td.U2 #{location.U2} V
+                td.U3 #{location.U3} V
+                td.timeSinceLastStatus #{location.timeSinceLastStatusText} ago
