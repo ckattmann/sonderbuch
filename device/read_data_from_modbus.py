@@ -1,86 +1,16 @@
 import time
 import json
 import pprint
-import math
-import modbus_tk.defines as cst
 import modbus_tk.modbus_tcp as modbus_tcp
+import modbus_tk.defines as cst
 
+# import read_data_from_modbus
 
-<<<<<<< HEAD
-data_info = [
-    {'startadress': 800, 'names': ['f']},
-    {'startadress': 808, 'names': ['U1','U2','U3']},
-    {'startadress': 828, 'names': ['PF1','PF2','PF3']},
-    {'startadress': 836, 'names': ['THDU1','THDU2','THDU3']},
-    {'startadress': 860, 'names': ['I1','I2','I3']},
-    {'startadress': 868, 'names': ['P1','P2','P3']},
-    {'startadress': 876, 'names': ['Q1','Q2','Q3']},
-    {'startadress': 884, 'names': ['S1','S2','S3']},
-    {'startadress': 914, 'names': ['TDDI1','TDDI2','TDDI3']},
-    {'startadress': 1002, 'names': ['HU1_'+str(i) for i in range(1,41)]},
-    {'startadress': 1082, 'names': ['HU2_'+str(i) for i in range(1,41)]},
-    {'startadress': 1162, 'names': ['HU3_'+str(i) for i in range(1,41)]},
-    {'startadress': 1480, 'names': ['HI1_'+str(i) for i in range(1,41)]},
-    {'startadress': 1560, 'names': ['HI2_'+str(i) for i in range(1,41)]},
-    {'startadress': 1640, 'names': ['HI3_'+str(i) for i in range(1,41)]},
-=======
-modbus_data_info = [
-        {'startadress': 800, 'names': ['f']},
-        {'startadress': 808, 'names': ['U1','U2','U3']},
-        {'startadress': 828, 'names': ['PF1','PF2','PF3']},
-        {'startadress': 836, 'names': ['THDU1','THDU2','THDU3']},
-        {'startadress': 860, 'names': ['I1','I2','I3']},
-        {'startadress': 868, 'names': ['P1','P2','P3']},
-        {'startadress': 876, 'names': ['Q1','Q2','Q3']},
-        {'startadress': 884, 'names': ['S1','S2','S3']},
-        {'startadress': 914, 'names': ['TDDI1','TDDI2','TDDI3']},
-        {'startadress': 1002, 'names': ['HU1_'+str(i) for i in range(1,41)]},
-        {'startadress': 1082, 'names': ['HU2_'+str(i) for i in range(1,41)]},
-        {'startadress': 1162, 'names': ['HU3_'+str(i) for i in range(1,41)]},
-        {'startadress': 1480, 'names': ['HI1_'+str(i) for i in range(1,41)]},
-        {'startadress': 1560, 'names': ['HI2_'+str(i) for i in range(1,41)]},
-        {'startadress': 1640, 'names': ['HI3_'+str(i) for i in range(1,41)]},
->>>>>>> 01bba0143847e9d4fd4d2d89c24a34494ecf871a
-]
+ip = '192.168.0.192'
+master = modbus_tcp.TcpMaster(host=ip)
 
-
-modbus_data = {
-    'f': {'startadress': 800, 'numberOfBytes': 2, 'data_format': '>f'},
-    'U1': {'startadress': 808, 'numberOfBytes': 2, 'data_format': '>f'},
-    'U2': {'startadress': 810, 'numberOfBytes': 2, 'data_format': '>f'},
-    'U3': {'startadress': 812, 'numberOfBytes': 2, 'data_format': '>f'},
-    'PF1': {'startadress': 828, 'numberOfBytes': 2, 'data_format': '>f'},
-    'PF2': {'startadress': 830, 'numberOfBytes': 2, 'data_format': '>f'},
-    'PF3': {'startadress': 832, 'numberOfBytes': 2, 'data_format': '>f'},
-    'THDU1': {'startadress': 836, 'numberOfBytes': 2, 'data_format': '>f'},
-    'THDU2': {'startadress': 838, 'numberOfBytes': 2, 'data_format': '>f'},
-    'THDU3': {'startadress': 840, 'numberOfBytes': 2, 'data_format': '>f'},
-    'I1': {'startadress': 860, 'numberOfBytes': 2, 'data_format': '>f'},
-    'I2': {'startadress': 862, 'numberOfBytes': 2, 'data_format': '>f'},
-    'I3': {'startadress': 864, 'numberOfBytes': 2, 'data_format': '>f'},
-    'P1': {'startadress': 860, 'numberOfBytes': 2, 'data_format': '>f'},
-    'P2': {'startadress': 862, 'numberOfBytes': 2, 'data_format': '>f'},
-    'P3': {'startadress': 864, 'numberOfBytes': 2, 'data_format': '>f'},
-    'TDDI1': {'startadress': 914, 'numberOfBytes': 2, 'data_format': '>f'},
-    'TDDI2': {'startadress': 916, 'numberOfBytes': 2, 'data_format': '>f'},
-    'TDDI3': {'startadress': 918, 'numberOfBytes': 2, 'data_format': '>f'},
-}
-
-
-def translate_datapoints(datapoints):
-    modbus_data_list = [(k,v['startadress'],v['numberOfBytes'],v['data_format']) for k,v in modbus_data.items()]
-    modbus_data_list.sort(key=lambda s: s[1])
-    startadresses = [v['startadress'] for v in modbus_data.values()].sort()
-    
-    while modbus_data_list:
-        datapoint = modbus_data_list.pop()
-        if datapoint[1] + numbytes in startadresses:
-            pass
-    numberOfBytes_list = [v['numberOfBytes'] for v in modbus_data.values()]
-    # print(startadresses)
-    # modbus_code_translation[datapoint]
-    modbus_info = []
-    return modbus_info
+with open('configuration.json','r') as f:
+    CONF = json.load(f)
 
 
 def get_modbus_point(master, startadress, numbytes, fmt):
@@ -89,45 +19,82 @@ def get_modbus_point(master, startadress, numbytes, fmt):
     return master.execute(slave, func_code, startadress, numbytes, data_format=fmt)
 
 
-def get_modbus_data(master, modbus_data_info):
-    datapoint = {}
+def get_datadict(measurement_conf):
 
-    for info in modbus_data_info:
-        numfloats = len(info['names'])
-        result = get_modbus_point(master, info['startadress'], numfloats*2, '>'+'f'*numfloats)
-        for name, value in zip(info['names'], result):
-            datapoint[name] = round(value,3)
-            if math.isnan(value):
-                datapoint[name] = 0
+    # Get all values except harmonics
+    # ===============================
 
-    return datapoint
+    starttime = time.time()
+
+    startaddress = 800
+    num_values = 60
+    values = get_modbus_point(master, startaddress, num_values*2, '>'+'f'*num_values)
+
+    values_to_record = measurement_conf['values']
+    with open('modbus_names.txt','r') as f:
+        names = f.read().split('\n')
+    full_datadict = {name: value for name,value in zip(names, values)}
+    datadict = {k:round(v,3) for k,v in full_datadict.items() if k in values_to_record}
+
+    # Get Harmonics
+    # =============
+
+    harmonics_modbus_data = {
+            'U1': {'startaddress': 1000, 'inpercent': True, 'roundto': 2},
+            'U2': {'startaddress': 1080, 'inpercent': True, 'roundto': 2},
+            'U3': {'startaddress': 1160, 'inpercent': True, 'roundto': 2},
+            'I1': {'startaddress': 1480, 'inpercent': False, 'roundto': 2},
+            'I2': {'startaddress': 1560, 'inpercent': False, 'roundto': 2},
+            'I3': {'startaddress': 1640, 'inpercent': False, 'roundto': 2}
+    }
+
+    for harmonics_name, harmonics_conf in harmonics_modbus_data.items():
+
+        startaddress = 1000
+        num_values = 40
+        values = get_modbus_point(master, harmonics_conf['startaddress'], num_values*2, '>'+'f'*num_values)
+
+        if harmonics_conf['inpercent']:
+            if values[0] > 1:
+                harmonics = [100 * values[i] / values[0] for i in range(1,len(values))]
+            else:  # no voltage
+                harmonics = [0 for i in range(1,len(values))]
+        else:
+            harmonics = [values[i] for i in range(1,len(values))]
+
+        harmonics_to_record = measurement_conf['harmonics'][harmonics_name]
+        harmonics_names = ['H'+harmonics_name+'_'+str(i) for i in range(2,len(values))]
+        harmonics_dict = {name: round(value,harmonics_conf['roundto']) for i,(name, value) in enumerate(zip(harmonics_names, harmonics),2) if i in harmonics_to_record}
+
+        datadict.update(harmonics_dict)
+
+    return datadict
+
 
 
 if __name__ == '__main__':
 
-    # translate_datapoints(modbus_data)
-
-    ip = '192.168.0.192'
-    master = modbus_tcp.TcpMaster(host=ip)
-
     while True:
         loopstart = time.time()
-        datapoint = get_modbus_data(master, modbus_data_info)
+        datapoint = {}
         timestamp = int(time.time())
-        datadict = {
-            'measurement': 'netzmonitor',
+        for measurement_conf in CONF['measurements']:
+            datadict = get_datadict(measurement_conf)
+            if measurement_conf['id'] >= 1:
+                datadict = {k+'@'+str(measurement_conf['id']):v for k,v in datadict.items()}
+            datapoint.update(datadict)
+        postdict = {
+            'grid' : CONF['grid'],
+            'location_id': CONF['location_id'],
             'time': timestamp,
             'fields': datapoint,
-            'tags': {
-                'Address': 'Goldene Gasse 1'
-            }
         }
 
         with open('data/'+str(timestamp)+'.json','w') as f:
-            f.write(json.dumps(datadict))
+            f.write(json.dumps(postdict))
 
         print('Time: ', round(time.time()-loopstart,3), end=', \t')
-        print('Size: ', len(json.dumps(datadict)))
+        print('Size: ', len(json.dumps(postdict)))
 
         # timetaken = round(time.time()-loopstart,3)
         # with open('times.csv','a') as f:
