@@ -6,16 +6,18 @@ import datetime
 
 import requests
 
-print('Starting Passing json files to server')
 
-ip = '192.168.0.206:13331'
+with open('configuration.json','r') as f:
+    CONF = json.loads(f.read())
+    SERVER_IP = CONF['api_ip']
+
 
 def postdata(datapoints, files):
     try:
-        r = requests.post('http://'+ip+'/api/write', json=datapoints)
+        r = requests.post('http://'+SERVER_IP+'/api/write', json=datapoints)
         if r.status_code == 200:
             [os.remove(f) for f in files]
-            print('POSTed to server until ', end=' ')
+            print('POSTed to '+ip+' until ', end=' ')
             print(datetime.datetime.fromtimestamp(datapoints[-1]['time']))
         else: 
             print('Server Response: ',r.text)
@@ -39,11 +41,13 @@ while True:
         except:
             pass  # Just try again next time
 
+        # If data has accumulated, send in 180-second-snippets:
         if len(datapoints) >= 180:
             while not postdata(datapoints, files):
                 time.sleep(1)
             datapoints = []
             files = []
 
+    # normal sending:
     if datapoints:
         postdata(datapoints, files)
