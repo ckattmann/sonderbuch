@@ -18,6 +18,7 @@ import tooltipsass from './components/map/tooltip.sass';
 
 import chartcardhtml from './components/chartcard/chartcard.pug';
 import chartcardsass from './components/chartcard/chartcard.sass';
+import selectLocation from './components/chartcard/selectLocation.pug' ;
 
 import firstviewhtml from './components/firstview/firstview.pug';
 import firstviewsass from './components/firstview/firstview.sass';
@@ -47,6 +48,23 @@ function colormap(i) {
     return 'rgb(' + r + ',' + g + ',0)';
 }
 
+function parseTimeDelta(seconds) {
+    var text = '- s';
+
+    if (seconds <= 60) {
+        text = seconds.toFixed(1) + ' s';
+    }
+    else if (seconds > 24 * 3600) {
+        text = Math.round(seconds / (24*3600)) + ' d';
+    }
+    else if (seconds > 3600) {
+        text = Math.round(seconds / 3600) + ' h';
+    }
+    else if (seconds > 60) {
+        text = Math.round(seconds / 60) + ' min';
+    }
+    return text;
+}
 
 function barChartPlotter(e) {
     var ctx = e.drawingContext;
@@ -99,17 +117,16 @@ $(document).ready(function() {
 
         var marker = L.circle([48.80448, 9.18795], {radius: 5, stroke: false, fillOpacity: 1, fillColor: "gray"}).addTo(map);         
         marker.bindTooltip(tooltiphtml(), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
-        // marker.bindTooltip("<span class='tooltip'><b>Störzbachstraße 15</b> <br> text</span>", {direction: 'right', offset: L.point(10,0), opacity: 0.4});
         function updateTooltip() {
             $.ajax({
                 type: 'GET',
                 dataType: 'json',
                 url: '/api/status',
                 success: function(res) {
-                    var status = res.status;
-                    console.log(status);
+                    var status = res.status.grids.unknown['0'];
+                    // console.log(status);
                     var now = Date.now();
-                    console.log((now - status.time) / 1000);
+                    // console.log((now - status.time) / 1000);
                     status.timeSinceLastStatus = (now - status.time) / 1000;
                     if (parseFloat(status.THDU1) > 99) {
                         status.THDU1 = '0';
@@ -120,6 +137,10 @@ $(document).ready(function() {
                     if (parseFloat(status.THDU3) > 99) {
                         status.THDU3 = '0';
                     }
+                    var secondsSinceLastStatus = (now - status.time) / 1000;
+                    status.timeSinceLastStatus = secondsSinceLastStatus;
+                    status.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+
                     marker.setTooltipContent(tooltiphtml(status));
 
                     $('.U1').css('color',colormap(Math.abs(parseFloat(status.U1) - 230) / 23 * 100));
@@ -158,8 +179,6 @@ $(document).ready(function() {
         };
         $('#mainarea').append(chartcardhtml(data));
 
-        $('.select-location').select2();
-        $('#select-timeUnit').select2({minimumResultsForSearch: -1});
 
         var g = new Dygraph(
             document.getElementById("basicchart"),
@@ -179,16 +198,18 @@ $(document).ready(function() {
                       ticker: Dygraph.dateTicker,
                     }
                   }
-
             }
         );
 
         function updateGraph() {
+            var selected = $('#select-location :selected');
+            var grid = selected.parent().attr('label');
+            var location_id = selected.val();
             var values = $('#values-options .chartoption.selected').data('values');
             var timeInterval = $('#timeInterval-options .chartoption.selected').data('timeinterval');
             var avrginterval = $('#input-aggtime').val()+$('#select-timeUnit').val();
-            var requestDict = {values: values, avrgInterval: avrginterval, timeInterval: timeInterval};
-            console.log(requestDict);
+            var requestDict = {grid: grid, location_id: location_id, values: values, avrgInterval: avrginterval, timeInterval: timeInterval};
+            // console.log(requestDict);
             $.ajax({
                 type: 'GET',
                 dataType: 'json',
@@ -204,14 +225,30 @@ $(document).ready(function() {
             });
         }
 
+        // Setup the selection at the top
+        $.ajax({
+            type: 'GET',
+            dataType: 'json',
+            url: '/api/status',
+            success: function(res) {
+                console.log(res.status);
+                var status = res.status;
+                $('.select-location').append(selectLocation(status));
+                $('.select-location').select2();
+            }
+        });
+        $('#select-timeUnit').select2({minimumResultsForSearch: -1});
         $('#timeInterval-options .chartoption').first().addClass('selected');
         $('#value-options .chartoption').first().addClass('selected');
-
         $('.chartoption').click(function(el){
             $(el.currentTarget).siblings().removeClass('selected');
             $(el.currentTarget).addClass('selected');
             updateGraph();
         });
+
+        // Event Listeners
+
+        $('#select-location').change(updateGraph);
         $('#input-aggtime').change(updateGraph);
         $('#select-timeUnit').change(updateGraph);
 
@@ -257,11 +294,6 @@ $(document).ready(function() {
         $(this).addClass('selected');
         $('#mainarea').empty();
 
-        $('#mainarea').append(status_html());
-        var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983179, 'address': 'Störzbachstraße 15', 'secondssinceupdate': 5};
-        $('#statustable').append(location_line_html(data));
-        var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983178, 'address': 'Störzbachstraße 13', 'secondssinceupdate': 123};
-        $('#statustable').append(location_line_html(data));
         $.ajax({
             type: 'GET',
             dataType: 'json',
@@ -269,13 +301,23 @@ $(document).ready(function() {
             // data: req,
             success: function(res) {
                 var status = res.status;
-                console.log(status);
                 var now = Date.now();
-                console.log((now - status.time) / 1000);
-                status.timeSinceLastStatus = (now - status.time) / 1000;
+                for (var grid in status.grids) {
+                    for (var location in status.grids[grid]) {
+                        var secondsSinceLastStatus = (now - status.grids[grid][location].time) / 1000;
+                        status.grids[grid][location].timeSinceLastStatus = secondsSinceLastStatus;
+                        status.grids[grid][location].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                    }
+                }
+                $('#mainarea').append(status_html(status));
             },
         });
+
+        // var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983179, 'address': 'Störzbachstraße 15', 'secondssinceupdate': 5};
+        // $('#statustable').append(location_line_html(data));
+        // var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983178, 'address': 'Störzbachstraße 13', 'secondssinceupdate': 123};
+        // $('#statustable').append(location_line_html(data));
     });
 
-    $('#link-first').click();
+    $('#link-map').click();
 });
