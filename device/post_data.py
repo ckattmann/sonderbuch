@@ -18,7 +18,7 @@ def postdata(datapoints, files):
         r = requests.post('http://'+SERVER_IP+'/api/write', json=json)
         if r.status_code == 200:
             [os.remove(f) for f in files]
-            print('POSTed to '+ip+' until ', end=' ')
+            print('POSTed to '+SERVER_IP+' until ', end=' ')
             print(datetime.datetime.fromtimestamp(datapoints[-1]['time']))
         else: 
             print('Server Response: ',r.text)

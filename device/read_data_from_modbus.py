@@ -81,14 +81,17 @@ if __name__ == '__main__':
         for measurement_conf in CONF['measurements']:
             datadict = get_datadict(measurement_conf)
             if measurement_conf['id'] >= 1:
-                datadict = {k+'@'+str(measurement_conf['id']):v for k,v in datadict.items()}
+                datadict = {k+'__'+str(measurement_conf['id']):v for k,v in datadict.items()}
             datapoint.update(datadict)
         postdict = {
             'grid' : CONF['grid'],
-            'location_id': CONF['location_id'],
+            'measurement': CONF['location_id'],
             'time': timestamp,
             'fields': datapoint,
+            'tags': {}
         }
+
+        # pprint.pprint(datapoint)
 
         with open('data/'+str(timestamp)+'.json','w') as f:
             f.write(json.dumps(postdict))
