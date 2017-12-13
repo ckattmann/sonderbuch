@@ -91,7 +91,7 @@ if __name__ == '__main__':
             'tags': {}
         }
 
-        # pprint.pprint(datapoint)
+        # pprint.pprint(postdict)
 
         with open('data/'+str(timestamp)+'.json','w') as f:
             f.write(json.dumps(postdict))
