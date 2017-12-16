@@ -7,10 +7,19 @@ import leafletcss from 'leaflet/dist/leaflet.css';
 import 'select2';
 import selectcss from 'select2/dist/css/select2.min.css';
 
+import 'moment';
+import jquery_date_range_picker from 'jquery-date-range-picker/dist/jquery.daterangepicker.min.js';
+import jquery_date_range_picker_css from 'jquery-date-range-picker/dist/daterangepicker.min.css';
+
 import bsslogo from './assets/bss_small.png';
+
+import icons from './assets/Icon-font-7-stroke-PIXEDEN-v-1.2.0/pe-icon-7-stroke/css/pe-icon-7-stroke.css';
+import iconshelper from './assets/Icon-font-7-stroke-PIXEDEN-v-1.2.0/pe-icon-7-stroke/css/helper.css';
 
 import indexhtml from './index.pug';
 import indexsass from './index.sass';
+
+import spinnersass from './components/misc/spinner.sass';
 
 import mapsass from './components/map/map.sass';
 import tooltiphtml from './components/map/tooltip.pug';
@@ -99,9 +108,18 @@ var map;
 
 $(document).ready(function() {
 
+
+    var timers = [];
+    function clearTimers() {
+        for (var i = 0; i<timers.length; i++) {
+            clearTimeout(timers[i]);
+        }
+
+    }
     $('#link-map').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
+        clearTimers();
         $('#mainarea').empty();
 
         // Noch in pug umwandeln:
@@ -123,7 +141,7 @@ $(document).ready(function() {
                 dataType: 'json',
                 url: '/api/status',
                 success: function(res) {
-                    var status = res.status.grids.unknown['0'];
+                    var status = res.status.grids.Misc['1'];
                     // console.log(status);
                     var now = Date.now();
                     // console.log((now - status.time) / 1000);
@@ -153,32 +171,63 @@ $(document).ready(function() {
                 },
             });
         }
-        setInterval(updateTooltip, 1000);
+        timers.push(setInterval(updateTooltip, 1000));
     });
 
     $('#link-first').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
+        clearTimers();
         $('#mainarea').empty();
+
+        var currentMinDate = 0;
+        var currentMaxDate = 0;
+        var currentMinY = 0;
+        var currentMaxY = 300;
     
         var data = {
             values: {
                 'Voltage': {id: 'voltage', values: 'U1,U2,U3'},
                 'THD': {id: 'thd', values: 'THDU1,THDU2,THDU3'},
-                'Current': {id: 'current', values: 'I1,I2,I3'},
-                'TDD': {id: 'thd', values: 'TDDI1,TDDI2,TDDI3'},
                 'Real Power': {id: 'P', values: 'P1,P2,P3'},
+                'Current': {id: 'current', values: 'I1,I2,I3'},
                 'Power Factor': {id: 'PF', values: 'PF1,PF2,PF3'},
+                'TDD': {id: 'thd', values: 'TDDI1,TDDI2,TDDI3'},
             },
             timeIntervals: {
+                'All Time': {id: 'alltime', values: 'alltime'},
                 'Today': {id: 'today', values: 'today'},
                 'This week': {id: 'thisweek', values: 'thisweek'},
-                'last 24h': {id: 'last24h', values: 'last24h'},
-                'last 7 days': {id: 'thisweek', values: 'last7d'},
+                'Last 24h': {id: 'last24h', values: 'last24h'},
+                // 'Last 7 days': {id: 'thisweek', values: 'last7d'},
             }
         };
         $('#mainarea').append(chartcardhtml(data));
+        
+        $('#random-timeframe').dateRangePicker({
+            autoClose: true,
+            format: 'DD.MM.YYYY',
+            startOfWeek: 'monday',
+            time: {
+                enabled: true
+            },
+            // beforeShowDay: function(t) {
+            //     console.log(t);
+            //     // console.log(t.milliseconds());
+            //     // var valid = t.
+            // }
+            defaultTime: moment().startOf('day').toDate(),
+            defaultEndTime: moment().endOf('day').toDate()
+        }).bind('datepicker-change',function(event,obj) {
+                updateGraph({
+                    keepY: true,
+                    timeRange: [obj.date1.getTime(), obj.date2.getTime()]
+                });
+            }
+        );
 
+        // Options for Data Graph
+        // ======================
 
         var g = new Dygraph(
             document.getElementById("basicchart"),
@@ -191,36 +240,123 @@ $(document).ready(function() {
                 legend: 'always',
                 colors: ['#F22613', '#26A65B', '#F7CA18'],
                 strokeWidth: 2,
+                // showRangeSelector: true,
                 axis : {
                     x : {
                       valueFormatter: Dygraph.dateString_,
                       valueParser: function(x) { return 1000*parseInt(x); },
                       ticker: Dygraph.dateTicker,
                     }
-                  }
+                  },
+                // xlabel: "Time",
+                valueFormatter: function(value, opts, seriesName, dygraph, row, col) {
+                    if (seriesName == 'time') {
+                        return moment(value).format('ddd, D.MM.YYYY HH:mm:ss');
+                    }
+                    else if (seriesName == 'U1' || seriesName == 'U2' || seriesName == 'U3') {
+                        return value.toFixed(2)+' V';
+                    }
+                    else if (seriesName == 'THDU1' || seriesName == 'THDU2' || seriesName == 'THDU3') {
+                        return value.toFixed(2)+'%';
+                    }
+                    else if (seriesName == 'I1' || seriesName == 'I2' || seriesName == 'I3') {
+                        return value.toFixed(3)+' A';
+                    }
+                    else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
+                        return value.toFixed(1)+' W';
+                    }
+                    else if (seriesName == 'TDDI1' || seriesName == 'TDDI2' || seriesName == 'TDDI3') {
+                        return value.toFixed(2)+' %';
+                    }
+                    else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
+                        return value.toFixed(2);
+                    }
+                },
+                ylabel: "Voltage",
+                yLabelWidth: 20,
+                zoomCallback: function(minDate, maxDate, yRanges) {
+                    if (minDate != currentMinDate || maxDate != currentMaxDate) {
+                        $('#timeselectbar .chartoption').removeClass('selected');
+                        currentMinDate = minDate;
+                        currentMaxDate = maxDate;
+                    }
+                    currentMinY = yRanges[0][0];
+                    currentMaxY = yRanges[0][1];
+                },
             }
         );
+        var errorflag = false;
+        function updateGraph(updateProps) {
+            // Possible keys for updateProps:
 
-        function updateGraph() {
+            // keepY: Keep Y-Axis Range from previous request: [true, false], default: false
+            var keepY = updateProps && updateProps.keepY;
+            
+            // keepT: Keep X-Axis Range (time) from previous request: [true, false], default: false
+            var keepT = updateProps && updateProps.keepT;
+
+            // timeRange: External Start and Stop timestamps in the form [start,stop] (millisecond timestamps), default: get from buttons
+            var timeRange = updateProps && updateProps.timeRange;
+
+            $('#basicchart').fadeTo(0.5, 0.5);
+            $('.spinner').css('display','block');
+            $('.splashmessage').css('display','none');
             var selected = $('#select-location :selected');
             var grid = selected.parent().attr('label');
             var location_id = selected.val();
             var values = $('#values-options .chartoption.selected').data('values');
-            var timeInterval = $('#timeInterval-options .chartoption.selected').data('timeinterval');
-            var avrginterval = $('#input-aggtime').val()+$('#select-timeUnit').val();
+            if (timeRange) {
+                var timeInterval = timeRange;
+                currentMinDate = timeRange[0];
+                currentMaxDate = timeRange[1];
+            }
+            else {
+                var timeInterval = keepT && !errorflag ? [currentMinDate, currentMaxDate] : $('#timeInterval-options .chartoption.selected').data('timeinterval');
+            }
+            var input_aggtime = $('#input-aggtime').val();
+            if (!/^[0-9]\d*$/.test(input_aggtime)) {
+                console.log('input-aggtime error');
+            }
+            var avrginterval = input_aggtime+$('#select-timeUnit').val();
             var requestDict = {grid: grid, location_id: location_id, values: values, avrgInterval: avrginterval, timeInterval: timeInterval};
-            // console.log(requestDict);
+            console.log(requestDict);
             $.ajax({
-                type: 'GET',
+                type: 'POST',
                 dataType: 'json',
+                contentType: 'application/json; charset=UTF-8',
                 url: '/api/query',
-                data: requestDict,
+                data: JSON.stringify(requestDict),
                 success: function(res) {
                     var data = res.data;
-                    for (var i=0;i<data.length;i++) {
-                        data[i][0] = new Date(data[i][0]);
+                    if (data.length == 0) {
+                        $('.spinner').css('display','none');
+                        $('.splashmessage').css('display','flex');
+                        $('.splashmessage').text('No data to display');
+                        g.updateOptions({'file': [], 'labels': res.labels});
+                        errorflag = true;
                     }
-                    g.updateOptions({'file': data, 'labels': res.labels});
+                    else {  // Successful Request:
+                        currentMinDate = data[0][0];
+                        currentMaxDate = data[data.length-1][0];
+                        for (var i=0;i<data.length;i++) {
+                            data[i][0] = new Date(data[i][0]);
+                        }
+                        var valueRange = keepY && !errorflag ? [currentMinY, currentMaxY] : [null, null];
+                        var dateWindow = keepT && !errorflag ? null : [currentMinDate, currentMaxDate];
+                        g.updateOptions({file: data, labels: res.labels, valueRange: valueRange, dateWindow: dateWindow});
+                        currentMinY = g.yAxisRange()[0];
+                        currentMaxY = g.yAxisRange()[1];
+                        $('.spinner').css('display','none');
+                        $('.splashmessage').css('display','none');
+                        $('#basicchart').fadeTo(0.5, 1);
+                        errorflag = false;
+                    }
+                },
+                error: function(res) {
+                    $('.spinner').css('display','none');
+                    $('.splashmessage').css('display','flex');
+                    $('.splashmessage').text('No data to display');
+                    errorflag = true;
                 },
             });
         }
@@ -231,34 +367,51 @@ $(document).ready(function() {
             dataType: 'json',
             url: '/api/status',
             success: function(res) {
-                console.log(res.status);
                 var status = res.status;
                 $('.select-location').append(selectLocation(status));
                 $('.select-location').select2();
+                updateGraph(false,false);
             }
         });
         $('#select-timeUnit').select2({minimumResultsForSearch: -1});
         $('#timeInterval-options .chartoption').first().addClass('selected');
-        $('#value-options .chartoption').first().addClass('selected');
-        $('.chartoption').click(function(el){
-            $(el.currentTarget).siblings().removeClass('selected');
-            $(el.currentTarget).addClass('selected');
-            updateGraph();
-        });
+        $('#container-values .chartoption').first().addClass('selected');
 
         // Event Listeners
+        $('#select-location').change(function() {updateGraph({
+            keepT: true,
+            keepY: true
+        });});
+        $('#timeselectbar .chartoption').click(function(el){
+            $(el.currentTarget).siblings().removeClass('selected');
+            $(el.currentTarget).addClass('selected');
+            updateGraph({
+                keepY: true
+            });
+        });
+        $('#container-values .chartoption').click(function(el){
+            $(el.currentTarget).siblings().removeClass('selected');
+            $(el.currentTarget).addClass('selected');
+            updateGraph({
+                keepT: true
+            });
+        });
+        $('#input-aggtime').change(function() {updateGraph({
+            keepY: true,
+            keepT: true
+        });});
+        $('#select-timeUnit').change(function() {updateGraph({
+            keepY: true,
+            keepT: true
+        });});
 
-        $('#select-location').change(updateGraph);
-        $('#input-aggtime').change(updateGraph);
-        $('#select-timeUnit').change(updateGraph);
-
-        $('#voltage').click();
     });
 
 
     $('#link-second').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
+        clearTimers();
         $('#mainarea').empty();
 
         $('#mainarea').append(secondviewhtml());
@@ -283,6 +436,7 @@ $(document).ready(function() {
     $('#link-view-simple').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
+        clearTimers();
         $('#mainarea').empty();
 
         $('#mainarea').append(view_simple_html());
@@ -292,6 +446,7 @@ $(document).ready(function() {
     $('#link-status').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
+        clearTimers();
         $('#mainarea').empty();
 
         $.ajax({
@@ -319,5 +474,5 @@ $(document).ready(function() {
         // $('#statustable').append(location_line_html(data));
     });
 
-    $('#link-map').click();
+    $('#link-first').click();
 });

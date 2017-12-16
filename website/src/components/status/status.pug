@@ -7,6 +7,9 @@ table#statustable
             td U1
             td U2
             td U2
+            td THD1
+            td THD2
+            td THD2
             td Last Status
         each location, location_id in desc
             tr.gridrow
@@ -14,4 +17,7 @@ table#statustable
                 td.U1 #{location.U1} V
                 td.U2 #{location.U2} V
                 td.U3 #{location.U3} V
+                td.U1 #{location.THDU1}%
+                td.U2 #{location.THDU2}%
+                td.U3 #{location.THDU3}%
                 td.timeSinceLastStatus #{location.timeSinceLastStatusText} ago

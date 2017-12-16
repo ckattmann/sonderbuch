@@ -17,6 +17,7 @@ div.chartcard
                 #timeInterval-options.option-container
                     each desc, key in timeIntervals
                         .chartoption(id=desc.id, data-timeinterval=desc.values)= key
+                    .chartoption#random-timeframe Custom Range
 
             #container-aggregation.charttitlebar
                 .bartitle Aggregation:
@@ -29,4 +30,7 @@ div.chartcard
                     option(value='w') Weeks
 
         #chartlegend.chartlegenddiv
-    #basicchart.chartdiv
+    .containerforspinner
+        #basicchart.chartdiv
+        .spinner
+        .splashmessage

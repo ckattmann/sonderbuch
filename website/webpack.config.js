@@ -3,6 +3,8 @@ const webpack = require("webpack");
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const WebpackDashboard = require('webpack-dashboard/plugin');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
 
 module.exports = {
     entry: './src/main.js',
@@ -46,6 +48,12 @@ module.exports = {
                 ]
             },
             {
+                test: /\.svg/,
+                use: [
+                    { loader: 'svg-sprite-loader'}
+                ]
+            },
+            {
                 test: /\.png/,
                 use: [
                     { loader: 'file-loader',
@@ -55,6 +63,13 @@ module.exports = {
                     }
                 ]
             },
+            {
+                test: /\.(ttf|eot|woff|woff2)$/,
+                loader: 'url-loader',
+                options: {
+                  name: 'fonts/[name].[ext]',
+                },
+              },
         ]
     },
     plugins: [
@@ -64,8 +79,15 @@ module.exports = {
             template : './src/index.pug',
         }),
         new webpack.ProvidePlugin({
-            $: 'jquery'
+            $: 'jquery',
+            moment: 'moment'
         }),
         new WebpackDashboard(),
+        // new UglifyJSPlugin({
+        //     uglifyOptions: {
+        //         comments: false,
+        //     }
+        // }),
+        new SpriteLoaderPlugin()
     ]
 }

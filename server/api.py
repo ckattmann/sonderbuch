@@ -1,10 +1,19 @@
+import os
 import json
 import time
 import datetime
-# import pprint
-
+import logging
 from flask import Flask, request, jsonify
 import influxdb
+
+loggingfolder = '/var/log/netzmonitor'
+if not os.path.exists(loggingfolder):
+    os.makedirs(loggingfolder)
+
+logging.basicConfig(filename='/var/log/netzmonitor/api.log', level=logging.INFO)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+# import pprint
+
 
 app = Flask(__name__)
 
@@ -15,20 +24,30 @@ with open('dbcredentials.json', 'r') as f:
 CLIENT = influxdb.InfluxDBClient(**credentials)
 
 
-def parse_timeInterval(timeInterval):
+def parse_timeInterval(timeInterval, database, measurement):
     influxdb_time_format = '%Y-%m-%dT%H:%M:%SZ'
-    first_timestamp_today = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    first_timestamp_thisweek = first_timestamp_today - datetime.timedelta(days=first_timestamp_today.weekday())
-
-    start_of_today = first_timestamp_today.strftime(influxdb_time_format)
-    start_of_thisweek = first_timestamp_thisweek.strftime(influxdb_time_format)
-    
-    shortcuts = {'last24h': 'time > now() - 24h',
-                 'last7d': 'time > now() - 168h',
-                 'today': "time >= '"+start_of_today+"' and time < '"+start_of_today+"' + 24h", # explicit timestamp in influxdb queries have to be single-quoted
-                 'thisweek': "time >= '"+start_of_thisweek+"' and time < '"+start_of_thisweek+"' + 7d"}
-    if timeInterval in shortcuts:
-        parsed_timeInterval = shortcuts[timeInterval]
+    if timeInterval == 'last24h':
+        return 'time > now() - 24h'
+    elif timeInterval == 'last7d':
+        return 'time > now() - 168h'
+    elif timeInterval == 'today':
+        first_timestamp_today = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_today = first_timestamp_today.strftime(influxdb_time_format)
+        return "time >= '"+start_of_today+"' and time < '"+start_of_today+"' + 24h" # explicit timestamp in influxdb queries have to be single-quoted
+    elif timeInterval == 'thisweek':
+        first_timestamp_today = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        first_timestamp_thisweek = first_timestamp_today - datetime.timedelta(days=first_timestamp_today.weekday())
+        start_of_thisweek = first_timestamp_thisweek.strftime(influxdb_time_format)
+        return "time >= '"+start_of_thisweek+"' and time < '"+start_of_thisweek+"' + 7d"
+    elif timeInterval == 'alltime':
+        CLIENT.switch_database(database)
+        result = CLIENT.query('SELECT FIRST(U1) from "'+measurement+'"', epoch='ms')
+        first_ts = list(result.get_points())[0]['time']
+        result = CLIENT.query('SELECT LAST(U1) from "'+measurement+'"', epoch='ms')
+        last_ts = list(result.get_points())[0]['time']
+        return "time >= "+str(first_ts)+"ms and time < "+str(last_ts)+"ms"
+    elif isinstance(timeInterval, list) and len(timeInterval) == 2:
+        return "time >= "+str(int(timeInterval[0]))+"ms and time < "+str(int(timeInterval[1]))+"ms"
     else:
         parsed_timeInterval = timeInterval
     return parsed_timeInterval
@@ -37,6 +56,7 @@ def parse_timeInterval(timeInterval):
 def build_query_string(query_dict):
     ''' Build an IndexQL query string from the given dictionary '''
 
+    # SELECT
     select_string = 'SELECT '
     if isinstance(query_dict['values'], list):
         selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
@@ -46,13 +66,10 @@ def build_query_string(query_dict):
         print('selected_string', repr(query_dict['values']))
 
     select_string += selected_string
-
     # FROM
     from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
-
     # WHERE
-    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'])
-
+    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'])
     # GROUPBY
     groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
 
@@ -61,9 +78,9 @@ def build_query_string(query_dict):
     return query_string
 
 
-@app.route('/api/query', methods=['GET'])
+@app.route('/api/query', methods=['POST'])
 def querydb():
-    query_dict = request.args.to_dict()
+    query_dict = request.get_json()
 
     # Preprocess the request
     if isinstance(query_dict['values'], str):
@@ -108,10 +125,16 @@ def write_to_db():
     datapoints = req['datapoints']
 
     if database not in [d['name'] for d in CLIENT.get_list_database()]:
+        logging.debug(str(database)+' not in DB, attempting to create it')
         CLIENT.create_database(database)
+        logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
 
-    # Write data to InfluxDB database
-    CLIENT.write_points(datapoints, database=database, time_precision='s')
+    # Write data to DB
+    try:
+        CLIENT.write_points(datapoints, database=database, time_precision='s')
+    except:
+        print(datapoints)
+        raise
 
     # Additionally write latest json to file for quick retrieval of status
     # address = data['tags']['address']
@@ -122,11 +145,9 @@ def write_to_db():
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
+
     # req = request.args.to_dict()
     status = {}
-    # result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from netzmonitor', epoch='ms')
-    # status = list(result.get_points())[0]
-    # status['U1'] = status['last']
 
     available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
     status['grids'] = {}
@@ -134,7 +155,6 @@ def get_status():
         CLIENT.switch_database(db)
         status['grids'][db] = {}
         for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
-            print(location)
             result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from "'+location+'"', epoch='ms')
             result = list(result.get_points())[0]
             result['U1'] = result.pop('last')
