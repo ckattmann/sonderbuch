@@ -1,23 +1,26 @@
-div#tooltip
-    span.tooltip-title Störzbachstraße 15
-    table
-        tr.tooltipline.realpower
-            td P
-            td.p1 #{parseFloat(P1).toFixed(2)}
-            td.p2 #{parseFloat(P2).toFixed(2)}
-            td.p3 #{parseFloat(P3).toFixed(2)}
-            td W
-        tr.tooltipline.voltages 
-            td U
-            td.u1 #{parseFloat(U1).toFixed(1)}
-            td.u2 #{parseFloat(U2).toFixed(1)}
-            td.u3 #{parseFloat(U3).toFixed(1)}
-            td V
-        tr.tooltipline.thd
-            td THD
-            td.thd1 #{parseFloat(THDU1).toFixed(2)}
-            td.thd2 #{parseFloat(THDU2).toFixed(2)}
-            td.thd3 #{parseFloat(THDU3).toFixed(2)}
-            td %
+div.tooltip
+    span.tooltip-title #{gridname}
+    br
+    each location in locations
+        span.tooltip-subtitle #{location.name}
+        table
+            tr.tooltipline.realpower
+                td P
+                td.p1 #{parseFloat(location.P1).toFixed(2)}
+                td.p2 #{parseFloat(location.P2).toFixed(2)}
+                td.p3 #{parseFloat(location.P3).toFixed(2)}
+                td W
+            tr.tooltipline.voltages 
+                td U
+                td.u1 #{parseFloat(location.U1).toFixed(1)}
+                td.u2 #{parseFloat(location.U2).toFixed(1)}
+                td.u3 #{parseFloat(location.U3).toFixed(1)}
+                td V
+            tr.tooltipline.thd
+                td THD
+                td.thd1 #{parseFloat(location.THDU1).toFixed(2)}
+                td.thd2 #{parseFloat(location.THDU2).toFixed(2)}
+                td.thd3 #{parseFloat(location.THDU3).toFixed(2)}
+                td %
     div.tooltipline.timeSinceLastStatus
         span #{timeSinceLastStatusText} ago

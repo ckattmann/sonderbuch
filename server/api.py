@@ -6,17 +6,7 @@ import logging
 from flask import Flask, request, jsonify
 import influxdb
 
-loggingfolder = '/var/log/netzmonitor'
-if not os.path.exists(loggingfolder):
-    os.makedirs(loggingfolder)
-
-logging.basicConfig(filename='/var/log/netzmonitor/api.log', level=logging.INFO)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-# import pprint
-
-
 app = Flask(__name__)
-
 
 # Load Database Credentials
 with open('dbcredentials.json', 'r') as f:

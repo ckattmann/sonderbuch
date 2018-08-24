@@ -1,10 +1,8 @@
 const path = require("path");
 const webpack = require("webpack");
-const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const WebpackDashboard = require('webpack-dashboard/plugin');
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
+//const { VueLoaderPlugin } = require('vue-loader');
 
 module.exports = {
     entry: './src/main.js',
@@ -35,6 +33,7 @@ module.exports = {
             {
                 test: /\.sass/,
                 use: [
+                    //{ loader: 'vue-style-loader', },
                     { loader: 'style-loader' },
                     { loader: 'css-loader' },
                     { loader: 'sass-loader' }
@@ -43,6 +42,7 @@ module.exports = {
             {
                 test: /\.css/,
                 use: [
+                    //{ loader: 'vue-style-loader', },
                     { loader: 'style-loader' },
                     { loader: 'css-loader' }
                 ]
@@ -69,10 +69,15 @@ module.exports = {
                 options: {
                   name: 'fonts/[name].[ext]',
                 },
-              },
+            },
+            //{
+            //   test: /\.vue$/,
+            //    use: 'vue-loader'
+            //}
         ]
     },
     plugins: [
+        //new VueLoaderPlugin(),
         // new CleanWebpackPlugin(['dist']),
         new HtmlWebpackPlugin({
             title: 'BSS Hochspannungstechnik',
@@ -80,14 +85,9 @@ module.exports = {
         }),
         new webpack.ProvidePlugin({
             $: 'jquery',
+            jQuery: 'jquery',
             moment: 'moment'
         }),
-        new WebpackDashboard(),
-        // new UglifyJSPlugin({
-        //     uglifyOptions: {
-        //         comments: false,
-        //     }
-        // }),
-        new SpriteLoaderPlugin()
+        new SpriteLoaderPlugin(),
     ]
 }

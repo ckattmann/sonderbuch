@@ -1,6 +1,5 @@
 */__pycache__
 website/node_modules
-website2/node_modules
 
 *.swp
 *.swo
@@ -9,5 +8,3 @@ website2/node_modules
 *.json
 server/dbcredentials.json
 !website/package.json
-
-deploy.sh
