@@ -6,13 +6,13 @@ import logging
 from flask import Flask, request, jsonify
 import influxdb
 
-loggingfolder = '/var/log/netzmonitor'
-if not os.path.exists(loggingfolder):
-    os.makedirs(loggingfolder)
+# loggingfolder = '/home/kipfer/Sonderbuch/server'
+# if not os.path.exists(loggingfolder):
+#     os.makedirs(loggingfolder)
 
-logging.basicConfig(filename='/var/log/netzmonitor/api.log', level=logging.INFO)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-# import pprint
+# logging.basicConfig(filename=os.path.join(loggingfolder, 'api.log'), level=logging.INFO)
+# logging.getLogger('urllib3').setLevel(logging.WARNING)
+# # import pprint
 
 
 app = Flask(__name__)
@@ -24,7 +24,7 @@ with open('dbcredentials.json', 'r') as f:
 CLIENT = influxdb.InfluxDBClient(**credentials)
 
 
-def parse_timeInterval(timeInterval, database, measurement):
+def parse_timeInterval(timeInterval, database, measurement, firstqueryvalue):
     influxdb_time_format = '%Y-%m-%dT%H:%M:%SZ'
     if timeInterval == 'last24h':
         return 'time > now() - 24h'
@@ -41,9 +41,9 @@ def parse_timeInterval(timeInterval, database, measurement):
         return "time >= '"+start_of_thisweek+"' and time < '"+start_of_thisweek+"' + 7d"
     elif timeInterval == 'alltime':
         CLIENT.switch_database(database)
-        result = CLIENT.query('SELECT FIRST(U1) from "'+measurement+'"', epoch='ms')
+        result = CLIENT.query('SELECT FIRST('+firstqueryvalue+') from "'+measurement+'"', epoch='ms')
         first_ts = list(result.get_points())[0]['time']
-        result = CLIENT.query('SELECT LAST(U1) from "'+measurement+'"', epoch='ms')
+        result = CLIENT.query('SELECT LAST('+firstqueryvalue+') from "'+measurement+'"', epoch='ms')
         last_ts = list(result.get_points())[0]['time']
         return "time >= "+str(first_ts)+"ms and time < "+str(last_ts)+"ms"
     elif isinstance(timeInterval, list) and len(timeInterval) == 2:
@@ -69,7 +69,7 @@ def build_query_string(query_dict):
     # FROM
     from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
     # WHERE
-    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'])
+    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],query_dict['values'][0])
     # GROUPBY
     groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
 
@@ -125,9 +125,9 @@ def write_to_db():
     datapoints = req['datapoints']
 
     if database not in [d['name'] for d in CLIENT.get_list_database()]:
-        logging.debug(str(database)+' not in DB, attempting to create it')
+        # logging.debug(str(database)+' not in DB, attempting to create it')
         CLIENT.create_database(database)
-        logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
+        # logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
 
     # Write data to DB
     try:
@@ -155,10 +155,26 @@ def get_status():
         CLIENT.switch_database(db)
         status['grids'][db] = {}
         for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
-            result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from "'+location+'"', epoch='ms')
-            result = list(result.get_points())[0]
-            result['U1'] = result.pop('last')
-            status['grids'][db][location] = result
+            try:
+                result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
+                result = list(result.get_points())[0]
+                result['U1'] = result.pop('last')
+                status['grids'][db][location] = result
+            except:
+                try:
+                    result = CLIENT.query('SELECT LAST(U),* from "'+location+'"', epoch='ms')
+                    result = list(result.get_points())[0]
+                    result['U'] = result.pop('last')
+                    status['grids'][db][location] = result
+                except:
+                    pass
+#                    try:
+#                        result = CLIENT.query('SELECT LAST(V),* from "'+location+'"', epoch='ms')
+#                        result = list(result.get_points())[0]
+#                        result['V'] = result.pop('last')
+#                        status['grids'][db][location] = result
+#                    except:
+#                        pass
 
     return jsonify({'status':status})
 
