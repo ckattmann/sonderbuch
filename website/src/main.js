@@ -101,6 +101,7 @@ function barChartPlotter(e) {
 }
 
 var map;
+var markers = {};
 
 $(document).ready(function() {
 
@@ -122,17 +123,15 @@ $(document).ready(function() {
         $('#mainarea').append('<div id="mapdiv"></div>');
 
         // just temporary
-        let coordinates = [{lat:48.7300084,lng:9.26214570000002},{lat:48.72966472978566,lng:9.26243700087673}];
+        let coordinates = [{lat:48.7300084,lng:9.26214570000002},{lat:48.72966472978566,lng:9.26243700087673},{lat:0,lng:0}];
 
-        var map = new L.map('mapdiv', {center: coordinates[0], zoom: 20});
+        map = new L.map('mapdiv', {center: coordinates[0], zoom: 20});
 
         // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map);
         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
             maxZoom: 18, 
             attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>'
         }).addTo(map);
-
-        var markers = {};
 
         function updateTooltip() {
             $.ajax({
@@ -176,16 +175,15 @@ $(document).ready(function() {
                                     //marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(location.U3) - 230) / 23 * 100)});
                                 }
                             }
-                            if (markers.hasOwnProperty(markerkey)) {
-                                console.log(markers[markerkey]);
-                                markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
-                            } else {
-                                markers[markerkey] = L.circleMarker(coordinates[index], {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
+                            if (!markers.hasOwnProperty(markerkey)) {
+                                markers[markerkey] = L.circleMarker(L.latLng(coordinates[index]), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
                                 markers[markerkey].bindTooltip(tooltiphtml(tooltipsMarkerInfo), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
+                            } else {
+                                markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
                             }
                         index ++;
                         }
-                    } 
+                    }
                 },
             });
         }
