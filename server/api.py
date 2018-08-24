@@ -14,9 +14,7 @@ import influxdb
 # logging.getLogger('urllib3').setLevel(logging.WARNING)
 # # import pprint
 
-
 app = Flask(__name__)
-
 
 # Load Database Credentials
 with open('dbcredentials.json', 'r') as f:

@@ -1,15 +1,12 @@
-// import purecss from 'purecss';
-import Dygraph from 'dygraphs/index.es5.js';
 
+import Dygraph from 'dygraphs';
 import 'leaflet';
-import leafletcss from 'leaflet/dist/leaflet.css';
-
-import 'select2';
-import selectcss from 'select2/dist/css/select2.min.css';
-
 import 'moment';
-import jquery_date_range_picker from 'jquery-date-range-picker/dist/jquery.daterangepicker.min.js';
-import jquery_date_range_picker_css from 'jquery-date-range-picker/dist/daterangepicker.min.css';
+import 'daterangepicker';
+import Vue from 'vue';
+
+import daterangepickecss from '../node_modules/daterangepicker/daterangepicker.css'
+import leafletcss from '../node_modules/leaflet/dist/leaflet.css'
 
 import bsslogo from './assets/bss_small.png';
 
@@ -40,7 +37,6 @@ import view_simple_sass from './components/dataview-simple/dataview-simple.sass'
 import status_html from './components/status/status.pug';
 import status_sass from './components/status/status.sass';
 import location_line_html from './components/status/location_line.pug';
-// import location_line_sass from './components/status/location_line.sass';
 
 
 function colormap(i) {
@@ -105,6 +101,7 @@ function barChartPlotter(e) {
 }
 
 var map;
+var markers = {};
 
 $(document).ready(function() {
 
@@ -125,49 +122,68 @@ $(document).ready(function() {
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
 
-        var map = L.map('mapdiv').setView([48.80445, 9.18791], 17);
-        // var map = L.map('mapdiv').setView([48.252877, 9.479706], 17);
+        // just temporary
+        let coordinates = [{lat:48.7300084,lng:9.26214570000002},{lat:48.72966472978566,lng:9.26243700087673},{lat:0,lng:0}];
+
+        map = new L.map('mapdiv', {center: coordinates[0], zoom: 20});
 
         // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map);
         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
-            maxZoom: 18, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OSM</a>, &copy; <a href="https://carto.com/attribution">CARTO</a>'
+            maxZoom: 18, 
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attribution">CARTO</a>'
         }).addTo(map);
 
-        var marker = L.circle([48.80448, 9.18795], {radius: 5, stroke: false, fillOpacity: 1, fillColor: "gray"}).addTo(map);         
-        marker.bindTooltip(tooltiphtml(), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
         function updateTooltip() {
             $.ajax({
                 type: 'GET',
                 dataType: 'json',
                 url: '/api/status',
                 success: function(res) {
-                    var status = res.status.grids.Misc['1'];
-                    // console.log(status);
-                    var now = Date.now();
-                    // console.log((now - status.time) / 1000);
-                    status.timeSinceLastStatus = (now - status.time) / 1000;
-                    if (parseFloat(status.THDU1) > 99) {
-                        status.THDU1 = '0';
-                    }
-                    if (parseFloat(status.THDU2) > 99) {
-                        status.THDU2 = '0';
-                    }
-                    if (parseFloat(status.THDU3) > 99) {
-                        status.THDU3 = '0';
-                    }
-                    var secondsSinceLastStatus = (now - status.time) / 1000;
-                    status.timeSinceLastStatus = secondsSinceLastStatus;
-                    status.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                    let index = 0
+                    for (const markerkey in res.status.grids) {
+                        if (res.status.grids.hasOwnProperty(markerkey)) {
+                            const markerInfo = res.status.grids[markerkey];
+                            let tooltipsMarkerInfo = {};
+                            tooltipsMarkerInfo.gridname = markerkey;
+                            tooltipsMarkerInfo.locations = markerInfo;
+                            for (const location_key in tooltipsMarkerInfo.locations) {
+                                if (tooltipsMarkerInfo.locations.hasOwnProperty(location_key)) {
+                                    let location = tooltipsMarkerInfo.locations[location_key];
+                                    location.name = location_key;
+                                    
+                                    var now = Date.now();
+                                    location.timeSinceLastStatus = (now - location.time) / 1000;
+                                    if (parseFloat(location.THDU1) > 99) {
+                                        location.THDU1 = '0';
+                                    }
+                                    if (parseFloat(location.THDU2) > 99) {
+                                        location.THDU2 = '0';
+                                    }
+                                    if (parseFloat(location.THDU3) > 99) {
+                                        location.THDU3 = '0';
+                                    }
+                                    var secondsSinceLastStatus = (now - location.time) / 1000;
+                                    location.timeSinceLastStatus = secondsSinceLastStatus;
+                                    tooltipsMarkerInfo.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
 
-                    marker.setTooltipContent(tooltiphtml(status));
-
-                    $('.U1').css('color',colormap(Math.abs(parseFloat(status.U1) - 230) / 23 * 100));
-                    $('.U2').css('color',colormap(Math.abs(parseFloat(status.U2) - 230) / 23 * 100));
-                    $('.U3').css('color',colormap(Math.abs(parseFloat(status.U3) - 230) / 23 * 100));
-                    $('.thd1').css('color',colormap(parseFloat(status.THDU1) / 8 * 100));
-                    $('.thd2').css('color',colormap(parseFloat(status.THDU2) / 8 * 100));
-                    $('.thd3').css('color',colormap(parseFloat(status.THDU3) / 8 * 100));
-                    marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(status.U3) - 230) / 23 * 100)});
+                                    //$('.U1').css('color',colormap(Math.abs(parseFloat(location.U1) - 230) / 23 * 100));
+                                    //$('.U2').css('color',colormap(Math.abs(parseFloat(location.U2) - 230) / 23 * 100));
+                                    //$('.U3').css('color',colormap(Math.abs(parseFloat(location.U3) - 230) / 23 * 100));
+                                    //$('.thd1').css('color',colormap(parseFloat(location.THDU1) / 8 * 100));
+                                    //$('.thd2').css('color',colormap(parseFloat(location.THDU2) / 8 * 100));
+                                    //$('.thd3').css('color',colormap(parseFloat(location.THDU3) / 8 * 100));
+                                    //marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(location.U3) - 230) / 23 * 100)});
+                                }
+                            }
+                            if (!markers.hasOwnProperty(markerkey)) {
+                                markers[markerkey] = L.circleMarker(L.latLng(coordinates[index]), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
+                                markers[markerkey].bindTooltip(tooltiphtml(tooltipsMarkerInfo), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
+                            } else {
+                                markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
+                            }
+                        index ++;
+                        }
+                    }
                 },
             });
         }
@@ -192,39 +208,35 @@ $(document).ready(function() {
                 'Real Power': {id: 'P', values: 'P1,P2,P3'},
                 'Current': {id: 'current', values: 'I1,I2,I3'},
                 'Power Factor': {id: 'PF', values: 'PF1,PF2,PF3'},
-                'TDD': {id: 'thd', values: 'TDDI1,TDDI2,TDDI3'},
+                'Appenent Power': {id: 'S', values: 'S1,S2,S3'},
+                'Frequency': {id: 'freq', values: 'f'}
             },
             timeIntervals: {
                 'All Time': {id: 'alltime', values: 'alltime'},
                 'Today': {id: 'today', values: 'today'},
                 'This week': {id: 'thisweek', values: 'thisweek'},
-                'Last 24h': {id: 'last24h', values: 'last24h'},
-                // 'Last 7 days': {id: 'thisweek', values: 'last7d'},
+                'Last 24h': {id: 'last24h', values: 'last24h'}
             }
         };
         $('#mainarea').append(chartcardhtml(data));
         
-        $('#random-timeframe').dateRangePicker({
-            autoClose: true,
-            format: 'DD.MM.YYYY',
-            startOfWeek: 'monday',
-            time: {
-                enabled: true
-            },
-            // beforeShowDay: function(t) {
-            //     console.log(t);
-            //     // console.log(t.milliseconds());
-            //     // var valid = t.
-            // }
-            defaultTime: moment().startOf('day').toDate(),
-            defaultEndTime: moment().endOf('day').toDate()
-        }).bind('datepicker-change',function(event,obj) {
-                updateGraph({
-                    keepY: true,
-                    timeRange: [obj.date1.getTime(), obj.date2.getTime()]
-                });
+        $('#random-timeframe').daterangepicker({
+            autoApply: true,
+            timePicker: true,
+            startDate: moment().startOf('hour'),
+            endDate: moment().startOf('hour').add(32, 'hour'),
+            locale: {
+              format: 'M/DD hh:mm A'
             }
-        );
+        });
+
+        $('#random-timeframe').on('apply.daterangepicker',function(event,obj) {
+            //console.log(obj.endDate.valueOf());
+            updateGraph({
+                keepY: true,
+                timeRange: [obj.startDate.valueOf(), obj.endDate.valueOf()]
+            });
+        });
 
         // Options for Data Graph
         // ======================
@@ -265,11 +277,14 @@ $(document).ready(function() {
                     else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
                         return value.toFixed(1)+' W';
                     }
-                    else if (seriesName == 'TDDI1' || seriesName == 'TDDI2' || seriesName == 'TDDI3') {
-                        return value.toFixed(2)+' %';
+                    else if (seriesName == 'S1' || seriesName == 'S2' || seriesName == 'S3') {
+                        return value.toFixed(2)+' VA';
                     }
                     else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
                         return value.toFixed(2);
+                    } 
+                    else if (seriesName == 'f') {
+                        return value.toFixed(2)+' Hz';
                     }
                 },
                 ylabel: "Voltage",
@@ -369,11 +384,11 @@ $(document).ready(function() {
             success: function(res) {
                 var status = res.status;
                 $('.select-location').append(selectLocation(status));
-                $('.select-location').select2();
+                //$('.select-location').select2();
                 updateGraph(false,false);
             }
         });
-        $('#select-timeUnit').select2({minimumResultsForSearch: -1});
+
         $('#timeInterval-options .chartoption').first().addClass('selected');
         $('#container-values .chartoption').first().addClass('selected');
 
@@ -385,9 +400,11 @@ $(document).ready(function() {
         $('#timeselectbar .chartoption').click(function(el){
             $(el.currentTarget).siblings().removeClass('selected');
             $(el.currentTarget).addClass('selected');
-            updateGraph({
-                keepY: true
-            });
+            if (el.currentTarget.id != 'random-timeframe') {
+                updateGraph({
+                    keepY: true
+                });
+            }         
         });
         $('#container-values .chartoption').click(function(el){
             $(el.currentTarget).siblings().removeClass('selected');
@@ -406,42 +423,6 @@ $(document).ready(function() {
         });});
 
     });
-
-
-    $('#link-second').click(function() {
-        $('.sidebar-link').removeClass('selected');
-        $(this).addClass('selected');
-        clearTimers();
-        $('#mainarea').empty();
-
-        $('#mainarea').append(secondviewhtml());
-        var data = {items: {involts:'Volts', inpercent: '% / 50 Hz'}};
-        $('#harmonicschart').append(chartcardhtml(data));
-
-        var g = new Dygraph(
-            document.getElementById("basicchart"),
-            "Date,Temperature\n" +
-            "2,75\n" +
-            "3,70\n" +
-            "4,80\n",
-            {
-                plotter: barChartPlotter,
-                labelsDiv: "chartlegend",
-                includeZero: true 
-            }
-        );
-    });
-
-
-    $('#link-view-simple').click(function() {
-        $('.sidebar-link').removeClass('selected');
-        $(this).addClass('selected');
-        clearTimers();
-        $('#mainarea').empty();
-
-        $('#mainarea').append(view_simple_html());
-    });
-
 
     $('#link-status').click(function() {
         $('.sidebar-link').removeClass('selected');
@@ -467,11 +448,6 @@ $(document).ready(function() {
                 $('#mainarea').append(status_html(status));
             },
         });
-
-        // var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983179, 'address': 'Störzbachstraße 15', 'secondssinceupdate': 5};
-        // $('#statustable').append(location_line_html(data));
-        // var data = {'gridid': 'SONDZ-E-UST-002', 'id': 12912983178, 'address': 'Störzbachstraße 13', 'secondssinceupdate': 123};
-        // $('#statustable').append(location_line_html(data));
     });
 
     $('#link-first').click();
