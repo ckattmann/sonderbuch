@@ -18,6 +18,28 @@ table#statustable
             td
                 padding-top: 20px
 
+    tr.cordsinfo
+        color: #333
+        font-size:
+        &:hover
+            //cursor: pointer
+            background-color: #FBFBFB
+        &:not(:first-child)
+            td
+                text-align: right
+                .cordsinput
+                    margin-left: 4px
+                    margin-right: 4px
+                .cordsbutton
+                    cursor: pointer
+                    margin-left: 4px
+                    margin-right: 4px
+                    background-color: green
+                    border-style: solid
+                    box-shadow: blur
+                    border-radius: 10%
+                    border-color: green
+
     tr.columntitles
         td
             font-size: 12
@@ -29,7 +51,7 @@ table#statustable
     
     tr.gridrow
         &:hover
-            cursor: pointer
+            //cursor: pointer
             background-color: #FBFBFB
         td 
             &:first-child

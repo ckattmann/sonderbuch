@@ -13,6 +13,12 @@ with open('dbcredentials.json', 'r') as f:
     credentials = json.loads(f.read())
 CLIENT = influxdb.InfluxDBClient(**credentials)
 
+# Load all existing cooorinates
+try:
+    with open('coordinates.json', 'r') as f:
+        coordinates = json.loads(f.read())
+except:
+    cooorinates = {}
 
 def parse_timeInterval(timeInterval, database, measurement):
     influxdb_time_format = '%Y-%m-%dT%H:%M:%SZ'
@@ -135,8 +141,6 @@ def write_to_db():
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-
-    # req = request.args.to_dict()
     status = {}
 
     available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
@@ -144,13 +148,20 @@ def get_status():
     for db in available_databases:
         CLIENT.switch_database(db)
         status['grids'][db] = {}
+        if db in cooorinates.keys():
+            status['grids'][db]['coordinates'] = cooorinates[db]
         for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
             result = CLIENT.query('SELECT LAST(U1),U2,U3,THDU1,THDU2,THDU3,I1,I2,I3,P1,P2,P3 from "'+location+'"', epoch='ms')
             result = list(result.get_points())[0]
             result['U1'] = result.pop('last')
-            status['grids'][db][location] = result
+            status['grids'][db]['measurements'][location] = result
 
     return jsonify({'status':status})
+
+@app.route('/api/update', methods=['POST'])
+def set_status():
+    req = request.get_json()
+    return jsonify(req)
 
 
 if __name__ == '__main__':

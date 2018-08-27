@@ -146,6 +146,7 @@ $(document).ready(function() {
                             let tooltipsMarkerInfo = {};
                             tooltipsMarkerInfo.gridname = markerkey;
                             tooltipsMarkerInfo.locations = markerInfo;
+                            tooltipsMarkerInfo.coordinates = markerInfo.coordinates;
                             for (const location_key in tooltipsMarkerInfo.locations) {
                                 if (tooltipsMarkerInfo.locations.hasOwnProperty(location_key)) {
                                     let location = tooltipsMarkerInfo.locations[location_key];
