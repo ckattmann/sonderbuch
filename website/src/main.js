@@ -122,10 +122,7 @@ $(document).ready(function() {
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
 
-        // just temporary
-        let coordinates = [{lat:48.7300084,lng:9.26214570000002},{lat:48.72966472978566,lng:9.26243700087673},{lat:0,lng:0}];
-
-        map = new L.map('mapdiv', {center: coordinates[0], zoom: 20});
+        map = new L.map('mapdiv', {center: {lat:48.7300084,lng:9.26214570000002}, zoom: 20});
 
         // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map);
         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
@@ -177,7 +174,7 @@ $(document).ready(function() {
                                 }
                             }
                             if (!markers.hasOwnProperty(markerkey)) {
-                                markers[markerkey] = L.circleMarker(L.latLng(coordinates[index]), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
+                                markers[markerkey] = L.circleMarker(L.latLng(tooltipsMarkerInfo.coordinates), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
                                 markers[markerkey].bindTooltip(tooltiphtml(tooltipsMarkerInfo), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
                             } else {
                                 markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
@@ -335,7 +332,7 @@ $(document).ready(function() {
             }
             var avrginterval = input_aggtime+$('#select-timeUnit').val();
             var requestDict = {grid: grid, location_id: location_id, values: values, avrgInterval: avrginterval, timeInterval: timeInterval};
-            console.log(requestDict);
+            //console.log(requestDict);
             $.ajax({
                 type: 'POST',
                 dataType: 'json',
@@ -438,16 +435,39 @@ $(document).ready(function() {
             // data: req,
             success: function(res) {
                 var status = res.status;
-                console.log(status);
                 var now = Date.now();
+                let index = 0
                 for (var grid in status.grids) {
+                    status.grids[grid].id = index;
                     for (var location in status.grids[grid].measurements) {
                         var secondsSinceLastStatus = (now - status.grids[grid].measurements[location].time) / 1000;
                         status.grids[grid].measurements[location].timeSinceLastStatus = secondsSinceLastStatus;
                         status.grids[grid].measurements[location].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
                     }
-                }              
+                    index++;
+                }
+                //console.log(status);
+                             
                 $('#mainarea').append(status_html(status));
+                
+                $('.cordsbutton').click(function(event){
+                    let requestDict = {};
+                    let partId = event.target.id.slice(7)
+                    //console.log($('#gridname-'+partId));
+                    
+                    requestDict.db = $('#gridname-'+partId)[0].innerText;
+                    requestDict.lat = parseFloat($('#lat-'+partId)[0].value);
+                    requestDict.lng = parseFloat($('#lng-'+partId)[0].value);
+                    console.log(requestDict);
+                    $.ajax({
+                        type: 'POST',
+                        dataType: 'json',
+                        url: '/api/update',
+                        data: requestDict,
+                        // data: req,
+                        success: function(res) {},
+                    });
+                });
             },
         });
     });

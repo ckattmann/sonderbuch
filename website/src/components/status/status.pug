@@ -1,13 +1,13 @@
 table#statustable
     each desc, gridname in grids
         tr.header
-            td(colspan=999) #{gridname} 
+            td(colspan=999, id="gridname-"+desc.id) #{gridname} 
         tr.cordsinfo
             td(colspan=999)
                 span Coordinates:
-                input(type="value", placeholder="Latitude", value=desc.coordinates).cordsinput
-                input(type="value", placeholder="Longitude").cordsinput
-                button.cordsbutton Set
+                input(type="value", placeholder="Latitude", value=desc.coordinates.lat, id="lat-"+desc.id).cordsinput
+                input(type="value", placeholder="Longitude", value=desc.coordinates.lng, id="lng-"+desc.id).cordsinput
+                button(id="button-"+desc.id).cordsbutton Set
         tr.columntitles
             td ID
             td U1

@@ -174,7 +174,14 @@ def get_status():
 @app.route('/api/update', methods=['POST'])
 def set_status():
     req = request.get_json()
-    return jsonify(req)
+    coordinates[req[db]] = {}
+    coordinates[req[db]]['lat'] = req['lat']
+    coordinates[req[db]]['lng'] = req['lng']
+
+    with open('coordinates.json', 'w') as f:
+        f.write(json.dumps(coordinates))
+
+    return jsonify(coordinates)
 
 
 if __name__ == '__main__':
