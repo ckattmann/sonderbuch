@@ -77,7 +77,7 @@ def build_query_string(query_dict):
 @app.route('/api/query', methods=['POST'])
 def querydb():
     query_dict = request.get_json()
-
+    print(query_dict)
     # Preprocess the request
     if isinstance(query_dict['values'], str):
         if ',' in query_dict['values']:
@@ -119,19 +119,19 @@ def write_to_db():
     req = request.get_json()
     database = req['grid']
     datapoints = req['datapoints']
+    if database != 'Misc':
+        if database not in [d['name'] for d in CLIENT.get_list_database()]:
+            # logging.debug(str(database)+' not in DB, attempting to create it')
+            CLIENT.create_database(database)
+            # logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
 
-    if database not in [d['name'] for d in CLIENT.get_list_database()]:
-        # logging.debug(str(database)+' not in DB, attempting to create it')
-        CLIENT.create_database(database)
-        # logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
-
-    # Write data to DB
-    try:
-        CLIENT.write_points(datapoints, database=database, time_precision='ms')
-    except:
-        print('Error during writing process')
-        print(datapoints)
-        raise
+        # Write data to DB
+        try:
+            CLIENT.write_points(datapoints, database=database, time_precision='s')
+        except:
+            print('Error during writing process')
+            print(datapoints)
+            raise
 
     # Additionally write latest json to file for quick retrieval of status
     # address = data['tags']['address']
@@ -151,6 +151,7 @@ def get_status():
         status['grids'][db] = {}
         if db in cooorinates.keys():
             status['grids'][db]['coordinates'] = cooorinates[db]
+        status['grids'][db]['measurements'] = {}
         for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
             try:
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')

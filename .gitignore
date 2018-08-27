@@ -4,6 +4,7 @@ website/node_modules
 *.swp
 *.swo
 *.pyc
+*.log
 
 *.json
 server/dbcredentials.json
