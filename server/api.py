@@ -127,8 +127,9 @@ def write_to_db():
 
     # Write data to DB
     try:
-        CLIENT.write_points(datapoints, database=database, time_precision='s')
+        CLIENT.write_points(datapoints, database=database, time_precision='ms')
     except:
+        print('Error during writing process')
         print(datapoints)
         raise
 
