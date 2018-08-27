@@ -1,6 +1,6 @@
 each grid_props, grid in grids
     - var gridname = grid
     optgroup(label=gridname)
-        each location_props, location in grid_props
+        each location_props, location in grid_props.measurements
             - var locationname = location
             option(value=location) #{location}
