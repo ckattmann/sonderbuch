@@ -1,26 +1,30 @@
 div.tooltip
     span.tooltip-title #{gridname}
     br
-    each location in locations
-        span.tooltip-subtitle #{location.name}
+    span.tooltip-cords Latitude: #{coordinates.lat.toFixed(5)}°
+    br
+    span.tooltip-cords Longitude: #{coordinates.lng.toFixed(5)}°
+    br
+    each measurement in measurements
+        span.tooltip-subtitle #{measurement.name}
         table
             tr.tooltipline.realpower
                 td P
-                td.p1 #{parseFloat(location.P1).toFixed(2)}
-                td.p2 #{parseFloat(location.P2).toFixed(2)}
-                td.p3 #{parseFloat(location.P3).toFixed(2)}
+                td.p1 #{parseFloat(measurement.P1).toFixed(2)}
+                td.p2 #{parseFloat(measurement.P2).toFixed(2)}
+                td.p3 #{parseFloat(measurement.P3).toFixed(2)}
                 td W
             tr.tooltipline.voltages 
                 td U
-                td.u1 #{parseFloat(location.U1).toFixed(1)}
-                td.u2 #{parseFloat(location.U2).toFixed(1)}
-                td.u3 #{parseFloat(location.U3).toFixed(1)}
+                td.u1 #{parseFloat(measurement.U1).toFixed(1)}
+                td.u2 #{parseFloat(measurement.U2).toFixed(1)}
+                td.u3 #{parseFloat(measurement.U3).toFixed(1)}
                 td V
             tr.tooltipline.thd
                 td THD
-                td.thd1 #{parseFloat(location.THDU1).toFixed(2)}
-                td.thd2 #{parseFloat(location.THDU2).toFixed(2)}
-                td.thd3 #{parseFloat(location.THDU3).toFixed(2)}
+                td.thd1 #{parseFloat(measurement.THDU1).toFixed(2)}
+                td.thd2 #{parseFloat(measurement.THDU2).toFixed(2)}
+                td.thd3 #{parseFloat(measurement.THDU3).toFixed(2)}
                 td %
     div.tooltipline.timeSinceLastStatus
         span #{timeSinceLastStatusText} ago

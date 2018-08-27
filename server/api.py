@@ -147,36 +147,38 @@ def get_status():
     available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
     status['grids'] = {}
     for db in available_databases:
+        t1 = time.time()
         CLIENT.switch_database(db)
+        t2 = time.time()
+        status['time_for_switching'] = t2 - t1
         status['grids'][db] = {}
         if db in coordinates.keys():
             status['grids'][db]['coordinates'] = coordinates[db]
         else:
             status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
         status['grids'][db]['measurements'] = {}
-        for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
+        t3 = time.time()
+        status['time_for_coordinates'] = t3 - t2
+        for location in [d['name'] for d in CLIENT.get_list_measurements()]:
+            t4 = time.time()
+            status['time_for_list_measurements'] = t4 - t3
             try:
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
                 result = list(result.get_points())[0]
                 result['U1'] = result.pop('last')
                 status['grids'][db]['measurements'][location] = result
+            t5 = time.time()
+            status['time_for_values'] = t5 - t4
             except:
-                try:
-                    result = CLIENT.query('SELECT LAST(U),* from "'+location+'"', epoch='ms')
-                    result = list(result.get_points())[0]
-                    result['U'] = result.pop('last')
-                    status['grids'][db]['measurements'][location] = result
-                except:
-                    pass 
-
+                pass
     return jsonify({'status':status})
 
 @app.route('/api/update', methods=['POST'])
 def set_status():
     req = request.get_json()
-    coordinates[req[db]] = {}
-    coordinates[req[db]]['lat'] = req['lat']
-    coordinates[req[db]]['lng'] = req['lng']
+    coordinates[req['db']] = {}
+    coordinates[req['db']]['lat'] = req['lat']
+    coordinates[req['db']]['lng'] = req['lng']
 
     with open('coordinates.json', 'w') as f:
         f.write(json.dumps(coordinates))

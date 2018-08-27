@@ -102,17 +102,18 @@ function barChartPlotter(e) {
 
 var map;
 var markers = {};
+var startTimestamp;
+var stopTimestamp;
+
+var timers = [];
+function clearTimers() {
+    for (var i = 0; i<timers.length; i++) {
+        clearTimeout(timers[i]);
+    }
+
+}
 
 $(document).ready(function() {
-
-
-    var timers = [];
-    function clearTimers() {
-        for (var i = 0; i<timers.length; i++) {
-            clearTimeout(timers[i]);
-        }
-
-    }
     $('#link-map').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
@@ -131,61 +132,74 @@ $(document).ready(function() {
         }).addTo(map);
 
         function updateTooltip() {
+            startTimestamp = Date.now()
             $.ajax({
                 type: 'GET',
                 dataType: 'json',
                 url: '/api/status',
                 success: function(res) {
-                    let index = 0
+                    let index = 0;
                     for (const markerkey in res.status.grids) {
                         if (res.status.grids.hasOwnProperty(markerkey)) {
                             const markerInfo = res.status.grids[markerkey];
-                            let tooltipsMarkerInfo = {};
-                            tooltipsMarkerInfo.gridname = markerkey;
-                            tooltipsMarkerInfo.locations = markerInfo;
-                            tooltipsMarkerInfo.coordinates = markerInfo.coordinates;
-                            for (const location_key in tooltipsMarkerInfo.locations) {
-                                if (tooltipsMarkerInfo.locations.hasOwnProperty(location_key)) {
-                                    let location = tooltipsMarkerInfo.locations[location_key];
-                                    location.name = location_key;
-                                    
-                                    var now = Date.now();
-                                    location.timeSinceLastStatus = (now - location.time) / 1000;
-                                    if (parseFloat(location.THDU1) > 99) {
-                                        location.THDU1 = '0';
+                            if (markerInfo.coordinates.lat != null && markerInfo.coordinates.lat != null ) {
+                                let tooltipsMarkerInfo = {};
+                                tooltipsMarkerInfo.gridname = markerkey;
+                                tooltipsMarkerInfo.measurements = markerInfo.measurements;
+                                tooltipsMarkerInfo.coordinates = markerInfo.coordinates;
+                                
+                                for (const measurement_key in tooltipsMarkerInfo.measurements) {
+                                    if (tooltipsMarkerInfo.measurements.hasOwnProperty(measurement_key)) {
+                                        let measurement = tooltipsMarkerInfo.measurements[measurement_key];
+                                        measurement.name = measurement_key;
+                                        
+                                        var now = Date.now();
+                                        measurement.timeSinceLastStatus = (now - measurement.time) / 1000;
+                                        if (parseFloat(measurement.THDU1) > 99) {
+                                            measurement.THDU1 = '0';
+                                        }
+                                        if (parseFloat(measurement.THDU2) > 99) {
+                                            measurement.THDU2 = '0';
+                                        }
+                                        if (parseFloat(measurement.THDU3) > 99) {
+                                            measurement.THDU3 = '0';
+                                        }
+                                        var secondsSinceLastStatus = (now - measurement.time) / 1000;
+                                        measurement.timeSinceLastStatus = secondsSinceLastStatus;
+                                        tooltipsMarkerInfo.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+    
+                                        //$('.U1').css('color',colormap(Math.abs(parseFloat(measurement.U1) - 230) / 23 * 100));
+                                        //$('.U2').css('color',colormap(Math.abs(parseFloat(measurement.U2) - 230) / 23 * 100));
+                                        //$('.U3').css('color',colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100));
+                                        //$('.thd1').css('color',colormap(parseFloat(measurement.THDU1) / 8 * 100));
+                                        //$('.thd2').css('color',colormap(parseFloat(measurement.THDU2) / 8 * 100));
+                                        //$('.thd3').css('color',colormap(parseFloat(measurement.THDU3) / 8 * 100));
+                                        //marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100)});
                                     }
-                                    if (parseFloat(location.THDU2) > 99) {
-                                        location.THDU2 = '0';
-                                    }
-                                    if (parseFloat(location.THDU3) > 99) {
-                                        location.THDU3 = '0';
-                                    }
-                                    var secondsSinceLastStatus = (now - location.time) / 1000;
-                                    location.timeSinceLastStatus = secondsSinceLastStatus;
-                                    tooltipsMarkerInfo.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
-
-                                    //$('.U1').css('color',colormap(Math.abs(parseFloat(location.U1) - 230) / 23 * 100));
-                                    //$('.U2').css('color',colormap(Math.abs(parseFloat(location.U2) - 230) / 23 * 100));
-                                    //$('.U3').css('color',colormap(Math.abs(parseFloat(location.U3) - 230) / 23 * 100));
-                                    //$('.thd1').css('color',colormap(parseFloat(location.THDU1) / 8 * 100));
-                                    //$('.thd2').css('color',colormap(parseFloat(location.THDU2) / 8 * 100));
-                                    //$('.thd3').css('color',colormap(parseFloat(location.THDU3) / 8 * 100));
-                                    //marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(location.U3) - 230) / 23 * 100)});
                                 }
-                            }
-                            if (!markers.hasOwnProperty(markerkey)) {
-                                markers[markerkey] = L.circleMarker(L.latLng(tooltipsMarkerInfo.coordinates), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
-                                markers[markerkey].bindTooltip(tooltiphtml(tooltipsMarkerInfo), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
-                            } else {
-                                markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
+                                
+                                if (!markers.hasOwnProperty(markerkey)) {
+                                    markers[markerkey] = L.circleMarker(L.latLng(tooltipsMarkerInfo.coordinates), {radius: 4, stroke: false, fillOpacity: 1, fillColor: "grey"}).addTo(map);         
+                                    markers[markerkey].bindTooltip(tooltiphtml(tooltipsMarkerInfo), {direction: 'right', offset: L.point(10,0), opacity: 0.8, permanent: false, className: 'mapTooltip'});
+                                } else {
+                                    markers[markerkey].setTooltipContent(tooltiphtml(tooltipsMarkerInfo));
+                                }
                             }
                         index ++;
                         }
                     }
+                    stopTimestamp = Date.now();
+                    let timedelta;
+                    if ((1000 - stopTimestamp - startTimestamp) < 0) {
+                        timedelta = 0;
+                    } else {
+                        timedelta = 1000 - stopTimestamp - startTimestamp;
+                    }
+                    timers.push(setTimeout(updateTooltip, timedelta));
                 },
             });
         }
-        timers.push(setInterval(updateTooltip, 1000));
+        updateTooltip();
     });
 
     $('#link-first').click(function() {
@@ -439,10 +453,10 @@ $(document).ready(function() {
                 let index = 0
                 for (var grid in status.grids) {
                     status.grids[grid].id = index;
-                    for (var location in status.grids[grid].measurements) {
-                        var secondsSinceLastStatus = (now - status.grids[grid].measurements[location].time) / 1000;
-                        status.grids[grid].measurements[location].timeSinceLastStatus = secondsSinceLastStatus;
-                        status.grids[grid].measurements[location].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                    for (var measurement in status.grids[grid].measurements) {
+                        var secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
+                        status.grids[grid].measurements[measurement].timeSinceLastStatus = secondsSinceLastStatus;
+                        status.grids[grid].measurements[measurement].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
                     }
                     index++;
                 }
@@ -462,10 +476,12 @@ $(document).ready(function() {
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
+                        contentType: 'application/json; charset=UTF-8',
                         url: '/api/update',
-                        data: requestDict,
-                        // data: req,
-                        success: function(res) {},
+                        data: JSON.stringify(requestDict),
+                        success: function(res) {
+                            console.log(res);
+                        },
                     });
                 });
             },
