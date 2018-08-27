@@ -13,12 +13,12 @@ with open('dbcredentials.json', 'r') as f:
     credentials = json.loads(f.read())
 CLIENT = influxdb.InfluxDBClient(**credentials)
 
-# Load all existing cooorinates
+# Load all existing coordinates
 try:
     with open('coordinates.json', 'r') as f:
         coordinates = json.loads(f.read())
 except:
-    cooorinates = {}
+    coordinates = {}
 
 def parse_timeInterval(timeInterval, database, measurement, firstqueryvalue):
     influxdb_time_format = '%Y-%m-%dT%H:%M:%SZ'
@@ -149,8 +149,10 @@ def get_status():
     for db in available_databases:
         CLIENT.switch_database(db)
         status['grids'][db] = {}
-        if db in cooorinates.keys():
-            status['grids'][db]['coordinates'] = cooorinates[db]
+        if db in coordinates.keys():
+            status['grids'][db]['coordinates'] = coordinates[db]
+        else:
+            status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
         status['grids'][db]['measurements'] = {}
         for location in [d['name'] for d in list(CLIENT.get_list_measurements())]:
             try:

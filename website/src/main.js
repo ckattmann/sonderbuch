@@ -438,14 +438,15 @@ $(document).ready(function() {
             // data: req,
             success: function(res) {
                 var status = res.status;
+                console.log(status);
                 var now = Date.now();
                 for (var grid in status.grids) {
-                    for (var location in status.grids[grid]) {
-                        var secondsSinceLastStatus = (now - status.grids[grid][location].time) / 1000;
-                        status.grids[grid][location].timeSinceLastStatus = secondsSinceLastStatus;
-                        status.grids[grid][location].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                    for (var location in status.grids[grid].measurements) {
+                        var secondsSinceLastStatus = (now - status.grids[grid].measurements[location].time) / 1000;
+                        status.grids[grid].measurements[location].timeSinceLastStatus = secondsSinceLastStatus;
+                        status.grids[grid].measurements[location].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
                     }
-                }
+                }              
                 $('#mainarea').append(status_html(status));
             },
         });
