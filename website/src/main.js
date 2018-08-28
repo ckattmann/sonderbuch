@@ -3,7 +3,7 @@ import Dygraph from 'dygraphs';
 import 'leaflet';
 import 'moment';
 import 'daterangepicker';
-import Vue from 'vue';
+//import Vue from 'vue';
 
 import daterangepickecss from '../node_modules/daterangepicker/daterangepicker.css'
 import leafletcss from '../node_modules/leaflet/dist/leaflet.css'

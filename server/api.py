@@ -167,8 +167,8 @@ def get_status():
                 result = list(result.get_points())[0]
                 result['U1'] = result.pop('last')
                 status['grids'][db]['measurements'][location] = result
-            t5 = time.time()
-            status['time_for_values'] = t5 - t4
+                t5 = time.time()
+                status['time_for_values'] = t5 - t4
             except:
                 pass
     return jsonify({'status':status})
