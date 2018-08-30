@@ -101,16 +101,15 @@ function barChartPlotter(e) {
 }
 
 var map;
-var markers = {};
 var startTimestamp;
 var stopTimestamp;
 
 var timers = [];
 function clearTimers() {
-    for (var i = 0; i<timers.length; i++) {
+    for (var i = timers.length-1; i>=0; i--) {
         clearTimeout(timers[i]);
     }
-
+    timers = [];
 }
 
 $(document).ready(function() {
@@ -124,6 +123,7 @@ $(document).ready(function() {
         $('#mainarea').append('<div id="mapdiv"></div>');
 
         map = new L.map('mapdiv', {center: {lat:48.7300084,lng:9.26214570000002}, zoom: 20});
+        var markers = {};
 
         // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map);
         L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
@@ -138,6 +138,7 @@ $(document).ready(function() {
                 dataType: 'json',
                 url: '/api/status',
                 success: function(res) {
+                    console.log(res);                   
                     let index = 0;
                     for (const markerkey in res.status.grids) {
                         if (res.status.grids.hasOwnProperty(markerkey)) {
@@ -188,16 +189,21 @@ $(document).ready(function() {
                         index ++;
                         }
                     }
-                    stopTimestamp = Date.now();
-                    let timedelta;
-                    if ((1000 - stopTimestamp - startTimestamp) < 0) {
-                        timedelta = 0;
-                    } else {
-                        timedelta = 1000 - stopTimestamp - startTimestamp;
-                    }
-                    timers.push(setTimeout(updateTooltip, timedelta));
+                },
+                complete: function () {
+                    // stopTimestamp = Date.now();
+                    // let timedelta;
+                    // if ((1000 - (stopTimestamp - startTimestamp)) < 0) {
+                    //     timedelta = 0;
+                    //     updateTooltip();
+                    // } else {
+                    //     timedelta = 1000 - (stopTimestamp - startTimestamp);
+                    //     timers.push(setTimeout(updateTooltip, timedelta));
+                    // }
+                    // console.log(timers);
                 },
             });
+            timers.push(setTimeout(updateTooltip, 1000));
         }
         updateTooltip();
     });

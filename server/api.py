@@ -149,28 +149,27 @@ def get_status():
     for db in available_databases:
         t1 = time.time()
         CLIENT.switch_database(db)
+        status['time_for_switching'] = time.time() - t1
         t2 = time.time()
-        status['time_for_switching'] = t2 - t1
         status['grids'][db] = {}
         if db in coordinates.keys():
             status['grids'][db]['coordinates'] = coordinates[db]
         else:
             status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
         status['grids'][db]['measurements'] = {}
-        t3 = time.time()
-        status['time_for_coordinates'] = t3 - t2
+        status['time_for_coordinates'] = time.time() - t2
         for location in [d['name'] for d in CLIENT.get_list_measurements()]:
-            t4 = time.time()
-            status['time_for_list_measurements'] = t4 - t3
+            t3 = time.time()
             try:
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
                 result = list(result.get_points())[0]
                 result['U1'] = result.pop('last')
                 status['grids'][db]['measurements'][location] = result
                 t5 = time.time()
-                status['time_for_values'] = t5 - t4
             except:
                 pass
+            status['time_for_values'] = time.time() - t3
+            status['total_time'] = time.time() - t1
     return jsonify({'status':status})
 
 @app.route('/api/update', methods=['POST'])
