@@ -441,20 +441,27 @@ $(document).ready(function() {
                                         }
                                         currentMinY = yRanges[0][0];
                                         currentMaxY = yRanges[0][1];
-                                        if ((g.yAxisRange()[1] - g.yAxisRange()[0]) < 0.02) {
-                                            g.updateOptions({valueRange: [-0.01,0.01]});
-                                        }
+                                        // if ((currentMaxY - currentMinY) < 0.02) {
+                                        //     let meanValue = (currentMaxY - currentMinY) / 2 + currentMinY;
+                                        //     g.updateOptions({valueRange: [meanValue - 0.01, meanValue + 0.01]});
+                                        //     currentMinY = meanValue - 0.01;
+                                        //     currentMaxY = meanValue + 0.01;
+                                        // }
                                     },
                                 }
                             );
                         }
-                        g.yAxisRange()
-                        if ((g.yAxisRange()[1] - g.yAxisRange()[0]) < 0.02) {
-                            g.updateOptions({valueRange: [-0.01,0.01]});
-                        }
-                        g.resize();
                         currentMinY = g.yAxisRange()[0];
                         currentMaxY = g.yAxisRange()[1];
+                        // if ((currentMaxY - currentMinY) < 0.02) {
+                        //     let meanValue = (currentMaxY - currentMinY) / 2 + currentMinY;
+                        //     g.updateOptions({valueRange: [meanValue - 0.01, meanValue + 0.01]});
+                        //     currentMinY = meanValue - 0.01;
+                        //     currentMaxY = meanValue + 0.01;
+                        // } else {
+                        //     g.resize();
+                        // }
+                        g.resize()
                         $('.spinner').css('display','none');
                         $('.splashmessage').css('display','none');
                         $('#basicchart').fadeTo(0.5, 1);
