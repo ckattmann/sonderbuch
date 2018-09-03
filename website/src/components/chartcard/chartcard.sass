@@ -6,11 +6,11 @@
     box-shadow: 2px 2px 8px 4px whitesmoke
     padding: 10px
     #charttitle-container
-        display: flex
+        //display: flex
         flex-direction: row
         justify-content: space-between
         align-items: center
-        margin-bottom: 10px
+        //margin-bottom: 10px
         #chartselection-container
             .charttitlebar
                 display: flex
@@ -21,6 +21,7 @@
                 .bartitle
                     width: 150px
                     margin-left: 10px
+                    padding-right: 10px
                 select.select-location
                     width: 300px
                 .chartoption
@@ -76,10 +77,12 @@
         position: relative
 
         .chartdiv
-            flex-grow: 1
+            white-space: nowrap;
+            position: relative
+            flex: auto
             margin: 5px
-            margin-bottom: 10px
-            margin-right: 10px
+            min-width: 100%
+            max-height: 100% 
             .infobar
                 position: absolute
                 height: 50px

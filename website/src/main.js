@@ -1,5 +1,5 @@
-
 import Dygraph from 'dygraphs';
+//import Dygraph.dateString_ from 'dygraphs';
 import 'leaflet';
 import 'moment';
 import 'daterangepicker';
@@ -7,6 +7,7 @@ import 'daterangepicker';
 
 import daterangepickecss from '../node_modules/daterangepicker/daterangepicker.css'
 import leafletcss from '../node_modules/leaflet/dist/leaflet.css'
+import dygraphcss from '../node_modules/dygraphs/dist/dygraph.css'
 
 import bsslogo from './assets/bss_small.png';
 
@@ -137,8 +138,7 @@ $(document).ready(function() {
                 type: 'GET',
                 dataType: 'json',
                 url: '/api/status',
-                success: function(res) {
-                    console.log(res);                   
+                success: function(res) {                  
                     let index = 0;
                     for (const markerkey in res.status.grids) {
                         if (res.status.grids.hasOwnProperty(markerkey)) {
@@ -226,7 +226,7 @@ $(document).ready(function() {
                 'Real Power': {id: 'P', values: 'P1,P2,P3'},
                 'Current': {id: 'current', values: 'I1,I2,I3'},
                 'Power Factor': {id: 'PF', values: 'PF1,PF2,PF3'},
-                'Appenent Power': {id: 'S', values: 'S1,S2,S3'},
+                'Apparent Power': {id: 'S', values: 'S1,S2,S3'},
                 'Frequency': {id: 'freq', values: 'f'}
             },
             timeIntervals: {
@@ -259,65 +259,7 @@ $(document).ready(function() {
         // Options for Data Graph
         // ======================
 
-        var g = new Dygraph(
-            document.getElementById("basicchart"),
-            "Date,-\n" +
-            "0,0\n",
-            {
-                gridLinePattern: [4,4],
-                labelsDiv: "chartlegend",
-                labelsSeparateLines: true,
-                legend: 'always',
-                colors: ['#F22613', '#26A65B', '#F7CA18'],
-                strokeWidth: 2,
-                // showRangeSelector: true,
-                axis : {
-                    x : {
-                      valueFormatter: Dygraph.dateString_,
-                      valueParser: function(x) { return 1000*parseInt(x); },
-                      ticker: Dygraph.dateTicker,
-                    }
-                  },
-                // xlabel: "Time",
-                valueFormatter: function(value, opts, seriesName, dygraph, row, col) {
-                    if (seriesName == 'time') {
-                        return moment(value).format('ddd, D.MM.YYYY HH:mm:ss');
-                    }
-                    else if (seriesName == 'U1' || seriesName == 'U2' || seriesName == 'U3') {
-                        return value.toFixed(2)+' V';
-                    }
-                    else if (seriesName == 'THDU1' || seriesName == 'THDU2' || seriesName == 'THDU3') {
-                        return value.toFixed(2)+'%';
-                    }
-                    else if (seriesName == 'I1' || seriesName == 'I2' || seriesName == 'I3') {
-                        return value.toFixed(3)+' A';
-                    }
-                    else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
-                        return value.toFixed(1)+' W';
-                    }
-                    else if (seriesName == 'S1' || seriesName == 'S2' || seriesName == 'S3') {
-                        return value.toFixed(2)+' VA';
-                    }
-                    else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
-                        return value.toFixed(2);
-                    } 
-                    else if (seriesName == 'f') {
-                        return value.toFixed(2)+' Hz';
-                    }
-                },
-                ylabel: "Voltage",
-                yLabelWidth: 20,
-                zoomCallback: function(minDate, maxDate, yRanges) {
-                    if (minDate != currentMinDate || maxDate != currentMaxDate) {
-                        $('#timeselectbar .chartoption').removeClass('selected');
-                        currentMinDate = minDate;
-                        currentMaxDate = maxDate;
-                    }
-                    currentMinY = yRanges[0][0];
-                    currentMaxY = yRanges[0][1];
-                },
-            }
-        );
+        var g;
         var errorflag = false;
         function updateGraph(updateProps) {
             // Possible keys for updateProps:
@@ -337,6 +279,7 @@ $(document).ready(function() {
             var selected = $('#select-location :selected');
             var grid = selected.parent().attr('label');
             var location_id = selected.val();
+            var ylabel = $('#values-options .chartoption.selected')[0].innerText;
             var values = $('#values-options .chartoption.selected').data('values');
             if (timeRange) {
                 var timeInterval = timeRange;
@@ -360,7 +303,7 @@ $(document).ready(function() {
                 url: '/api/query',
                 data: JSON.stringify(requestDict),
                 success: function(res) {
-                    var data = res.data;
+                    let data = res.data;
                     if (data.length == 0) {
                         $('.spinner').css('display','none');
                         $('.splashmessage').css('display','flex');
@@ -374,9 +317,142 @@ $(document).ready(function() {
                         for (var i=0;i<data.length;i++) {
                             data[i][0] = new Date(data[i][0]);
                         }
-                        var valueRange = keepY && !errorflag ? [currentMinY, currentMaxY] : [null, null];
-                        var dateWindow = keepT && !errorflag ? null : [currentMinDate, currentMaxDate];
-                        g.updateOptions({file: data, labels: res.labels, valueRange: valueRange, dateWindow: dateWindow});
+                        let valueRange = keepY && !errorflag ? [currentMinY, currentMaxY] : [null, null];
+                        let dateWindow = keepT && !errorflag ? null : [currentMinDate, currentMaxDate];
+                        // let csvData = res.labels.join() + '\n' + data.map(function(d){
+                        //                                                     d[0] = d[0].getTime();
+                        //                                                     return d.join();
+                        //                                                 }).join('\n');            
+                        if (g) {
+                            g.updateOptions({'file': data, 'labels': res.labels, 'valueRange': valueRange, 'dateWindow': dateWindow, 'ylabel' : ylabel});
+                        } else {
+                            g = new Dygraph(
+                                document.getElementById("basicchart"),
+                                data,
+                                {
+                                    gridLinePattern: [4,4],
+                                    labelsDiv: "chartlegend",
+                                    //labelsSeparateLines: true,
+                                    legend: 'always',
+                                    labels: res.labels,
+                                    valueRange : valueRange,
+                                    dateWindow: dateWindow,
+                                    colors: ['#F22613', '#26A65B', '#F7CA18'],
+                                    strokeWidth: 2,
+                                    xlabel : 'Time',
+                                    ylabel : ylabel,
+                                    animatedZooms: true,
+                                    //digitsAfterDecimal : 2,
+                                    // showRangeSelector: true,
+                                    axes : {
+                                        x : {
+                                            valueFormatter: function (value) { return moment(value).format('ddd, D.MM.YYYY HH:mm:ss'); },  
+                                            ticker: Dygraph.dateTicker,
+                                            axisLabelWidth : 50,
+                                        },
+                                        y : {
+                                            //labelsKMB: true,
+                                            valueFormatter: function(value, opts, seriesName, dygraph, row, col) {
+                                                let dim;
+                                                let advalue;
+                                                if (value > 1000 || value < -1000) {
+                                                    advalue = value / 1000;
+                                                    dim = 'K';
+                                                } else if (value < 1 && value > -1) {
+                                                    advalue = value * 1000;
+                                                    dim = 'm';
+                                                } else {
+                                                    advalue = value; 
+                                                    dim = ''; 
+                                                }
+                                                if (seriesName == 'U1' || seriesName == 'U2' || seriesName == 'U3') {
+                                                    return advalue.toFixed(3)+ ' ' + dim +'V';
+                                                }
+                                                else if (seriesName == 'THDU1' || seriesName == 'THDU2' || seriesName == 'THDU3') {
+                                                    return value.toFixed(2)+'%';
+                                                }
+                                                else if (seriesName == 'I1' || seriesName == 'I2' || seriesName == 'I3') {
+                                                    return advalue.toFixed(3)+ ' ' + dim +'A';
+                                                }
+                                                else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
+                                                    return advalue.toFixed(3)+ ' ' + dim +'W';
+                                                }
+                                                else if (seriesName == 'S1' || seriesName == 'S2' || seriesName == 'S3') {
+                                                    return advalue.toFixed(3)+ ' ' + dim +'VA';
+                                                }
+                                                else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
+                                                    return value.toFixed(3);
+                                                } 
+                                                else if (seriesName == 'f') {
+                                                    return advalue.toFixed(3)+ ' ' + dim +'Hz';
+                                                }
+                                            },
+                                            axisLabelWidth : 85,
+                                            axisLabelFormatter: function (value) {
+                                                let seriesName = this.getOption('ylabel');
+                                                let dim;
+                                                let advalue;
+                                                let res;
+                                                if (value > 1000 || value < -1000) {
+                                                    advalue = value / 1000;
+                                                    dim = 'K';
+                                                } else if (value < 1 && value > -1) {
+                                                    advalue = value * 1000;
+                                                    dim = 'm';
+                                                } else {
+                                                    advalue = value; 
+                                                    dim = ''; 
+                                                }
+                                                if (seriesName == 'Voltage') {
+                                                    res = +advalue.toFixed(3)+ ' ' + dim +'V';
+                                                }
+                                                else if (seriesName == 'THD') {
+                                                    res = +value.toFixed(2)+'%';
+                                                }
+                                                else if (seriesName == 'Current') {
+                                                    res = +advalue.toFixed(3)+ ' ' + dim +'A';
+                                                }
+                                                else if (seriesName == 'Real Power') {
+                                                    res = +advalue.toFixed(3)+ ' ' + dim +'W';
+                                                }
+                                                else if (seriesName == 'Apparent Power') {
+                                                    res = +advalue.toFixed(3)+ ' ' + dim +'VA';
+                                                }
+                                                else if (seriesName == 'Power Factor') {
+                                                    res = +value.toFixed(3);
+                                                } 
+                                                else if (seriesName == 'Frequency') {
+                                                    res = +advalue.toFixed(3)+ ' ' + dim +'Hz';
+                                                } else {
+                                                    res = value.toFixed(2)
+                                                }
+                                                return res                           
+                                            },
+                                        },
+                                    },
+                                    //legendFormatter: legendFormatter,
+                                    yLabelWidth: 20,
+                                    yLabelWidth: 20,
+                                    zoomCallback: function(minDate, maxDate, yRanges) {
+                                        if (minDate != currentMinDate || maxDate != currentMaxDate) {
+                                            $('#timeselectbar .chartoption').removeClass('selected');
+                                            currentMinDate = minDate;
+                                            currentMaxDate = maxDate;
+                                        }
+                                        currentMinY = yRanges[0][0];
+                                        currentMaxY = yRanges[0][1];
+                                        if ((g.yAxisRange()[1] - g.yAxisRange()[0]) < 0.02) {
+                                            g.updateOptions({valueRange: [-0.01,0.01]});
+                                        }
+                                    },
+                                }
+                            );
+                        }
+                        g.yAxisRange()
+                        if ((g.yAxisRange()[1] - g.yAxisRange()[0]) < 0.02) {
+                            g.updateOptions({valueRange: [-0.01,0.01]});
+                        }
+                        g.resize();
                         currentMinY = g.yAxisRange()[0];
                         currentMaxY = g.yAxisRange()[1];
                         $('.spinner').css('display','none');
@@ -478,7 +554,6 @@ $(document).ready(function() {
                     requestDict.db = $('#gridname-'+partId)[0].innerText;
                     requestDict.lat = parseFloat($('#lat-'+partId)[0].value);
                     requestDict.lng = parseFloat($('#lng-'+partId)[0].value);
-                    console.log(requestDict);
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
@@ -486,7 +561,6 @@ $(document).ready(function() {
                         url: '/api/update',
                         data: JSON.stringify(requestDict),
                         success: function(res) {
-                            console.log(res);
                         },
                     });
                 });
