@@ -295,7 +295,6 @@ $(document).ready(function() {
             }
             var avrginterval = input_aggtime+$('#select-timeUnit').val();
             var requestDict = {grid: grid, location_id: location_id, values: values, avrgInterval: avrginterval, timeInterval: timeInterval};
-            //console.log(requestDict);
             $.ajax({
                 type: 'POST',
                 dataType: 'json',
@@ -455,6 +454,16 @@ $(document).ready(function() {
                                     },
                                     yLabelWidth: 20,
                                     yLabelWidth: 20,
+                                    // interactionModel: {
+                                    //     mousedown: Dygraph.defaultInteractionModel.mousedown,
+                                    //     mousemove: Dygraph.defaultInteractionModel.mousemove,
+                                    //     mouseup: Dygraph.defaultInteractionModel.mouseup,
+                                    //     mouseout: Dygraph.defaultInteractionModel.mouseout,
+                                    //     dblclick: Dygraph.defaultInteractionModel.dblClickV3,
+                                    //     mousewheel: function (data) {
+                                    //         console.log(data)
+                                    //     },
+                                    // },
                                     zoomCallback: function(minDate, maxDate, yRanges) {
                                         if (minDate != currentMinDate || maxDate != currentMaxDate) {
                                             $('#timeselectbar .chartoption').removeClass('selected');
