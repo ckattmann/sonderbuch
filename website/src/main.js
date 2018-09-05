@@ -348,7 +348,7 @@ $(document).ready(function() {
                                         x : {
                                             valueFormatter: function (value) { return moment(value).format('ddd, D.MM.YYYY HH:mm:ss'); },  
                                             ticker: Dygraph.dateTicker,
-                                            axisLabelWidth : 50,
+                                            //axisLabelWidth : 50,
                                         },
                                         y : {
                                             //labelsKMB: true,
@@ -430,7 +430,29 @@ $(document).ready(function() {
                                             },
                                         },
                                     },
-                                    //legendFormatter: legendFormatter,
+                                    legendFormatter: function (data) {
+                                        let dygraph = data.dygraph;
+                                        let series = data.series;
+                                        let x = data.x;
+                                        if (x == null) {
+                                            // This happens when there's no selection and {legend: 'always'} is set.
+                                            let html = dygraph.getOption('ylabel') + ':';
+                                            series.forEach(serie => {
+                                                html += '<span class="legendlabel" style="color: ' + serie.color + '">' + serie.dashHTML + serie.labelHTML + '</span>';
+                                            });
+                                            return html;
+                                        } else {
+                                            let html = data.xHTML + ':';
+                                            series.forEach(serie => {
+                                                if (serie.y){
+                                                    html += '<span class="legendlabel" style="color: ' + serie.color + '">' + serie.labelHTML + '</span>:<span class="withdata">' + serie.yHTML + '</span>';
+                                                } else {
+                                                    html += '<span class="legendlabel" style="color: ' + serie.color + '">' + serie.labelHTML + '</span>:<span class="withdata">no data</span>';
+                                                }
+                                            });
+                                            return html;
+                                        }
+                                    },
                                     yLabelWidth: 20,
                                     yLabelWidth: 20,
                                     zoomCallback: function(minDate, maxDate, yRanges) {
@@ -576,4 +598,9 @@ $(document).ready(function() {
     });
 
     $('#link-first').click();
+
+    $('#link-title').click(function () {
+        $('#link-first').click();
+    });
+
 });
