@@ -2,7 +2,34 @@ const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
+const autoprefixer = require('autoprefixer');
 //const { VueLoaderPlugin } = require('vue-loader');
+
+function tryResolve_(url, sourceFilename) {
+    // Put require.resolve in a try/catch to avoid node-sass failing with cryptic libsass errors
+    // when the importer throws
+    try {
+        return require.resolve(url, {paths: [path.dirname(sourceFilename)]});
+    } catch (e) {
+        return '';
+    }
+}
+
+function tryResolveScss(url, sourceFilename) {
+    // Support omission of .scss and leading _
+    const normalizedUrl = url.endsWith('.scss') ? url : `${url}.scss`;
+    return tryResolve_(normalizedUrl, sourceFilename) ||
+        tryResolve_(path.join(path.dirname(normalizedUrl), `_${path.basename(normalizedUrl)}`),
+        sourceFilename);
+}
+
+function materialImporter(url, prev) {
+    if (url.startsWith('@material')) {
+        const resolved = tryResolveScss(url, prev);
+        return {file: resolved || url};
+    }
+    return {file: url};
+}
 
 module.exports = {
     entry: './src/main.js',
@@ -24,27 +51,47 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.pug/,
+                test: /\.pug$/,
                 use: [
                     // { loader: 'html-loader' },
                     { loader: 'pug-loader' }
                 ]
             },
             {
-                test: /\.sass/,
+                test: /\.sass$/,
                 use: [
                     //{ loader: 'vue-style-loader', },
                     { loader: 'style-loader' },
                     { loader: 'css-loader' },
-                    { loader: 'sass-loader' }
+                    { loader: 'sass-loader' },
                 ]
             },
             {
-                test: /\.css/,
+                test: /\.css$/,
                 use: [
                     //{ loader: 'vue-style-loader', },
                     { loader: 'style-loader' },
-                    { loader: 'css-loader' }
+                    { loader: 'css-loader' },
+                ]
+            },
+            {
+                test: /\.scss$/,
+                use: [
+                    //{ loader: 'vue-style-loader', },
+                    { loader: 'file-loader' },
+                    { loader: 'css-loader' },
+                    { loader: 'postcss-loader',
+                        options: {
+                            plugins: () => [autoprefixer()]
+                        }
+                    },
+                    { 
+                        loader: 'sass-loader',
+                         options: {
+                            includePaths: ['./../node_modules'],
+                            //importer: materialImporter,
+                        }
+                    },
                 ]
             },
             {
@@ -74,6 +121,10 @@ module.exports = {
             //   test: /\.vue$/,
             //    use: 'vue-loader'
             //}
+            {
+              test: /\.js$/,
+               use: 'babel-loader'
+            }
         ]
     },
     plugins: [

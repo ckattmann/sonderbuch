@@ -1,18 +1,16 @@
 import Dygraph from 'dygraphs';
-//import Dygraph.dateString_ from 'dygraphs';
 import 'leaflet';
 import 'moment';
 import 'daterangepicker';
 //import Vue from 'vue';
 
-import daterangepickecss from '../node_modules/daterangepicker/daterangepicker.css'
-import leafletcss from '../node_modules/leaflet/dist/leaflet.css'
-import dygraphcss from '../node_modules/dygraphs/dist/dygraph.css'
+import * as tools from './components/misc/tools.js'
+
+import 'daterangepicker/daterangepicker.css';
+import 'leaflet/dist/leaflet.css';
+import 'dygraphs/dist/dygraph.css';
 
 import bsslogo from './assets/bss_small.png';
-
-import icons from './assets/Icon-font-7-stroke-PIXEDEN-v-1.2.0/pe-icon-7-stroke/css/pe-icon-7-stroke.css';
-import iconshelper from './assets/Icon-font-7-stroke-PIXEDEN-v-1.2.0/pe-icon-7-stroke/css/helper.css';
 
 import indexhtml from './index.pug';
 import indexsass from './index.sass';
@@ -27,103 +25,28 @@ import chartcardhtml from './components/chartcard/chartcard.pug';
 import chartcardsass from './components/chartcard/chartcard.sass';
 import selectLocation from './components/chartcard/selectLocation.pug' ;
 
-import firstviewhtml from './components/firstview/firstview.pug';
-import firstviewsass from './components/firstview/firstview.sass';
-
-import secondviewhtml from './components/secondview/secondview.pug';
-
-import view_simple_html from './components/dataview-simple/dataview-simple.pug';
-import view_simple_sass from './components/dataview-simple/dataview-simple.sass';
-
 import status_html from './components/status/status.pug';
 import status_sass from './components/status/status.sass';
-import location_line_html from './components/status/location_line.pug';
-
-
-function colormap(i) {
-    var r, g;
-    if (i <= 50) {
-        // green to yellow
-        r = Math.floor(255 * (i / 50));
-        g = 255;
-    } else {
-        // yellow to red
-        r = 255;
-        g = Math.floor(155 * ((50 - (i-1) % 50) / 50));
-    }
-    return 'rgb(' + r + ',' + g + ',0)';
-}
-
-function parseTimeDelta(seconds) {
-    var text = '- s';
-
-    if (seconds <= 60) {
-        text = seconds.toFixed(1) + ' s';
-    }
-    else if (seconds > 24 * 3600) {
-        text = Math.round(seconds / (24*3600)) + ' d';
-    }
-    else if (seconds > 3600) {
-        text = Math.round(seconds / 3600) + ' h';
-    }
-    else if (seconds > 60) {
-        text = Math.round(seconds / 60) + ' min';
-    }
-    return text;
-}
-
-function barChartPlotter(e) {
-    var ctx = e.drawingContext;
-    var points = e.points;
-    var y_bottom = e.dygraph.toDomYCoord(0);
-
-    ctx.fillStyle = e.color;
-
-    // Find the minimum separation between x-values.
-    // This determines the bar width.
-    var min_sep = Infinity;
-    for (var i = 1; i < points.length; i++) {
-      var sep = points[i].canvasx - points[i - 1].canvasx;
-      if (sep < min_sep) min_sep = sep;
-    }
-    var bar_width = Math.floor(2.0 / 3 * min_sep);
-
-    // Do the actual plotting.
-    for (var i = 0; i < points.length; i++) {
-      var p = points[i];
-      var center_x = p.canvasx;
-
-      ctx.fillRect(center_x - bar_width / 2, p.canvasy,
-          bar_width, y_bottom - p.canvasy);
-
-      ctx.strokeRect(center_x - bar_width / 2, p.canvasy,
-          bar_width, y_bottom - p.canvasy);
-    }
-}
 
 var map;
 var startTimestamp;
 var stopTimestamp;
+var coordinates = {lat:48.7300084,lng:9.26214570000002};
+var selectedLabel;
 
-var timers = [];
-function clearTimers() {
-    for (var i = timers.length-1; i>=0; i--) {
-        clearTimeout(timers[i]);
-    }
-    timers = [];
-}
+window.timers = [];
 
 $(document).ready(function() {
     $('#link-map').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
-        clearTimers();
+        tools.clearTimers();
         $('#mainarea').empty();
 
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
 
-        map = new L.map('mapdiv', {center: {lat:48.7300084,lng:9.26214570000002}, zoom: 20});
+        map = new L.map('mapdiv', {center: coordinates, zoom: 20});
         var markers = {};
 
         // L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {attribution: ''}).addTo(map);
@@ -167,15 +90,15 @@ $(document).ready(function() {
                                         }
                                         var secondsSinceLastStatus = (now - measurement.time) / 1000;
                                         measurement.timeSinceLastStatus = secondsSinceLastStatus;
-                                        tooltipsMarkerInfo.timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                                        tooltipsMarkerInfo.timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
     
-                                        //$('.U1').css('color',colormap(Math.abs(parseFloat(measurement.U1) - 230) / 23 * 100));
-                                        //$('.U2').css('color',colormap(Math.abs(parseFloat(measurement.U2) - 230) / 23 * 100));
-                                        //$('.U3').css('color',colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100));
-                                        //$('.thd1').css('color',colormap(parseFloat(measurement.THDU1) / 8 * 100));
-                                        //$('.thd2').css('color',colormap(parseFloat(measurement.THDU2) / 8 * 100));
-                                        //$('.thd3').css('color',colormap(parseFloat(measurement.THDU3) / 8 * 100));
-                                        //marker.setStyle({'fillColor': colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100)});
+                                        //$('.U1').css('color',tools.colormap(Math.abs(parseFloat(measurement.U1) - 230) / 23 * 100));
+                                        //$('.U2').css('color',tools.colormap(Math.abs(parseFloat(measurement.U2) - 230) / 23 * 100));
+                                        //$('.U3').css('color',tools.colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100));
+                                        //$('.thd1').css('color',tools.colormap(parseFloat(measurement.THDU1) / 8 * 100));
+                                        //$('.thd2').css('color',tools.colormap(parseFloat(measurement.THDU2) / 8 * 100));
+                                        //$('.thd3').css('color',tools.colormap(parseFloat(measurement.THDU3) / 8 * 100));
+                                        //marker.setStyle({'fillColor': tools.colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100)});
                                     }
                                 }
                                 
@@ -198,20 +121,20 @@ $(document).ready(function() {
                     //     updateTooltip();
                     // } else {
                     //     timedelta = 1000 - (stopTimestamp - startTimestamp);
-                    //     timers.push(setTimeout(updateTooltip, timedelta));
+                    //     window.timers.push(window.setTimeout(updateTooltip, timedelta));
                     // }
-                    // console.log(timers);
+                    // console.log(window.timers);
                 },
             });
-            timers.push(setTimeout(updateTooltip, 1000));
+            window.timers.push(window.setTimeout(updateTooltip, 1000));
         }
         updateTooltip();
     });
 
-    $('#link-first').click(function() {
+    $('#link-data').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
-        clearTimers();
+        tools.clearTimers();
         $('#mainarea').empty();
 
         var currentMinDate = 0;
@@ -276,9 +199,14 @@ $(document).ready(function() {
             $('#basicchart').fadeTo(0.5, 0.5);
             $('.spinner').css('display','block');
             $('.splashmessage').css('display','none');
+
+            if (selectedLabel) {
+                var selected = $('#select-location')
+                selected.val(selectedLabel);       
+            }
             var selected = $('#select-location :selected');
-            var grid = selected.parent().attr('label');
             var location_id = selected.val();
+            var grid = selected.parent().attr('label');
             var ylabel = $('#values-options .chartoption.selected')[0].innerText;
             var values = $('#values-options .chartoption.selected').data('values');
             if (timeRange) {
@@ -559,7 +487,7 @@ $(document).ready(function() {
     $('#link-status').click(function() {
         $('.sidebar-link').removeClass('selected');
         $(this).addClass('selected');
-        clearTimers();
+        tools.clearTimers();
         $('#mainarea').empty();
 
         $.ajax({
@@ -573,25 +501,32 @@ $(document).ready(function() {
                 let index = 0
                 for (var grid in status.grids) {
                     status.grids[grid].id = index;
+                    let lat = status.grids[grid].coordinates.lat;
+                    let lng = status.grids[grid].coordinates.lng;
+                    if (lat && lng) {
+                        status.grids[grid].buttonDisabled = false;
+                    } else {                     
+                        status.grids[grid].buttonDisabled = true;
+                    }
                     for (var measurement in status.grids[grid].measurements) {
                         var secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
                         status.grids[grid].measurements[measurement].timeSinceLastStatus = secondsSinceLastStatus;
-                        status.grids[grid].measurements[measurement].timeSinceLastStatusText = parseTimeDelta(secondsSinceLastStatus);
+                        status.grids[grid].measurements[measurement].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
                     }
                     index++;
                 }
                 //console.log(status);
                              
                 $('#mainarea').append(status_html(status));
-                
+                // send GPS Coordinates to server
                 $('.cordsbutton').click(function(event){
                     let requestDict = {};
-                    let partId = event.target.id.slice(7)
-                    //console.log($('#gridname-'+partId));
+                    let partID = event.target.id.slice('cordsbutton'.length);
+                    $('#gotocordsbutton' + partID)[0].disabled = false;
                     
-                    requestDict.db = $('#gridname-'+partId)[0].innerText;
-                    requestDict.lat = parseFloat($('#lat-'+partId)[0].value);
-                    requestDict.lng = parseFloat($('#lng-'+partId)[0].value);
+                    requestDict.db = $('#gridname'+partID)[0].innerText;
+                    requestDict.lat = parseFloat($('#lat'+partID)[0].value);
+                    requestDict.lng = parseFloat($('#lng'+partID)[0].value);
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
@@ -602,14 +537,49 @@ $(document).ready(function() {
                         },
                     });
                 });
+                // refresh data
+                function refreshStatusInfo() {
+                    $.ajax({
+                        type: 'GET',
+                        dataType: 'json',
+                        contentType: 'application/json; charset=UTF-8',
+                        url: '/api/status',
+                        success: function(res) {
+                            let grids = res.status.grids;
+                            for (const gridname in grids) {
+                                if (grids.hasOwnProperty(gridname)) {
+                                    let measurements = grids[gridname].measurements;
+                                    //console.log(measurements);
+                                }
+                            }
+                            //console.log(grids);
+                            console.log($('.gridrow'));
+                            window.timers.push(window.setTimeout(refreshStatusInfo, 1000));    
+                        },
+                    });
+                }
+                refreshStatusInfo();
+
+                $('.gotocordsbutton').click(function(event){
+                    let partID = event.target.id.slice('gotocordsbutton'.length);
+                    coordinates.lat = parseFloat($('#lat'+partID)[0].value);
+                    coordinates.lng = parseFloat($('#lng'+partID)[0].value);
+                    $('#link-map').click()                    
+                });
+
+                $('.gridrow').click(function(event){
+                    selectedLabel = event.currentTarget.childNodes[0].innerText;
+                    $('#link-data').click()
+                });
+
             },
         });
     });
 
-    $('#link-first').click();
+    $('#link-data').click();
 
     $('#link-title').click(function () {
-        $('#link-first').click();
+        $('#link-data').click();
     });
 
 });
