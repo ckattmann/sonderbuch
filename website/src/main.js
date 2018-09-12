@@ -4,7 +4,7 @@ import 'moment';
 import 'daterangepicker';
 //import Vue from 'vue';
 
-import * as tools from './components/misc/tools.js'
+import * as tools from './components/misc/tools.js';
 
 import 'daterangepicker/daterangepicker.css';
 import 'leaflet/dist/leaflet.css';
@@ -13,7 +13,7 @@ import 'dygraphs/dist/dygraph.css';
 import bsslogo from './assets/bss_small.png';
 
 import indexhtml from './index.pug';
-import indexsass from './index.sass';
+import './index.sass';
 
 import spinnersass from './components/misc/spinner.sass';
 
@@ -508,7 +508,7 @@ $(document).ready(function() {
                     } else {                     
                         status.grids[grid].buttonDisabled = true;
                     }
-                    for (var measurement in status.grids[grid].measurements) {
+                    for (let measurement in status.grids[grid].measurements) {
                         var secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
                         status.grids[grid].measurements[measurement].timeSinceLastStatus = secondsSinceLastStatus;
                         status.grids[grid].measurements[measurement].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
@@ -521,12 +521,14 @@ $(document).ready(function() {
                 // send GPS Coordinates to server
                 $('.cordsbutton').click(function(event){
                     let requestDict = {};
-                    let partID = event.target.id.slice('cordsbutton'.length);
-                    $('#gotocordsbutton' + partID)[0].disabled = false;
-                    
+                    let partID = event.target.id.slice('cordbutton'.length);
+
                     requestDict.db = $('#gridname'+partID)[0].innerText;
                     requestDict.lat = parseFloat($('#lat'+partID)[0].value);
                     requestDict.lng = parseFloat($('#lng'+partID)[0].value);
+                    if (requestDict.lat && requestDict.lng) {
+                        $('#gotocordsbutton' + partID)[0].disabled = false;
+                    }
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
@@ -545,15 +547,30 @@ $(document).ready(function() {
                         contentType: 'application/json; charset=UTF-8',
                         url: '/api/status',
                         success: function(res) {
+                            now = Date.now();
                             let grids = res.status.grids;
                             for (const gridname in grids) {
                                 if (grids.hasOwnProperty(gridname)) {
                                     let measurements = grids[gridname].measurements;
-                                    //console.log(measurements);
+                                    for (const location in measurements){
+                                        if (measurements.hasOwnProperty(location)) {
+                                            let location_id = location.replace(/\s/g, '')+'-'+gridname.replace(/\s/g, '');
+                                            let loc_el = $('#'+location_id).children();
+                                            for (let index = 1; index < loc_el.length; index++) {
+                                                const element = loc_el[index];
+                                                if (element.className.slice(0,-1) == 'U') {
+                                                    element.innerText = measurements[location][element.className] + ' V';
+                                                } else if (element.className.slice(0,-1) == 'THDU') {
+                                                    element.innerText = measurements[location][element.className] + '%';
+                                                } else {
+                                                    element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
+                                                } 
+                                            }
+                                        }
+                                    }
+                                    
                                 }
                             }
-                            //console.log(grids);
-                            console.log($('.gridrow'));
                             window.timers.push(window.setTimeout(refreshStatusInfo, 1000));    
                         },
                     });

@@ -1,35 +1,10 @@
-const path = require("path");
+const path = require('path');
+const glob = require('glob');
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const SpriteLoaderPlugin = require('svg-sprite-loader/plugin');
 const autoprefixer = require('autoprefixer');
-//const { VueLoaderPlugin } = require('vue-loader');
-
-function tryResolve_(url, sourceFilename) {
-    // Put require.resolve in a try/catch to avoid node-sass failing with cryptic libsass errors
-    // when the importer throws
-    try {
-        return require.resolve(url, {paths: [path.dirname(sourceFilename)]});
-    } catch (e) {
-        return '';
-    }
-}
-
-function tryResolveScss(url, sourceFilename) {
-    // Support omission of .scss and leading _
-    const normalizedUrl = url.endsWith('.scss') ? url : `${url}.scss`;
-    return tryResolve_(normalizedUrl, sourceFilename) ||
-        tryResolve_(path.join(path.dirname(normalizedUrl), `_${path.basename(normalizedUrl)}`),
-        sourceFilename);
-}
-
-function materialImporter(url, prev) {
-    if (url.startsWith('@material')) {
-        const resolved = tryResolveScss(url, prev);
-        return {file: resolved || url};
-    }
-    return {file: url};
-}
+//const { VueLoaderPlugin } = require('vue-loader')
 
 module.exports = {
     entry: './src/main.js',
@@ -63,7 +38,12 @@ module.exports = {
                     //{ loader: 'vue-style-loader', },
                     { loader: 'style-loader' },
                     { loader: 'css-loader' },
-                    { loader: 'sass-loader' },
+                    { 
+                        loader: 'sass-loader',
+                        options: {
+                            includePaths: [ path.resolve(__dirname, '../node_modules') ],
+                        }
+                    },
                 ]
             },
             {
@@ -87,8 +67,8 @@ module.exports = {
                     },
                     { 
                         loader: 'sass-loader',
-                         options: {
-                            includePaths: ['./../node_modules'],
+                        options: {
+                            includePaths: [ path.resolve(__dirname, '../node_modules') ],
                             //importer: materialImporter,
                         }
                     },
@@ -103,7 +83,8 @@ module.exports = {
             {
                 test: /\.png/,
                 use: [
-                    { loader: 'file-loader',
+                    { 
+                        loader: 'file-loader',
                         options: {
                             name: '[name]_[hash:7].[ext]',
                         }
@@ -122,10 +103,18 @@ module.exports = {
             //    use: 'vue-loader'
             //}
             {
-              test: /\.js$/,
-               use: 'babel-loader'
+                test: /\.js$/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env']
+                    }
+                }
             }
         ]
+    },
+    resolve: {
+        modules: [ 'node_modules' ]
     },
     plugins: [
         //new VueLoaderPlugin(),
