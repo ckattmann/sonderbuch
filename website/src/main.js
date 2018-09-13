@@ -199,10 +199,10 @@ $(document).ready(function() {
             $('#basicchart').fadeTo(0.5, 0.5);
             $('.spinner').css('display','block');
             $('.splashmessage').css('display','none');
-
             if (selectedLabel) {
                 var selected = $('#select-location')
-                selected.val(selectedLabel);       
+                selected.val(selectedLabel);
+                selectedLabel = undefined;
             }
             var selected = $('#select-location :selected');
             var location_id = selected.val();
@@ -453,10 +453,12 @@ $(document).ready(function() {
         $('#container-values .chartoption').first().addClass('selected');
 
         // Event Listeners
-        $('#select-location').change(function() {updateGraph({
-            keepT: true,
-            keepY: true
-        });});
+        $('#select-location').change(function() {
+            updateGraph({
+                keepT: true,
+                keepY: true
+            });
+        });
         $('#timeselectbar .chartoption').click(function(el){
             $(el.currentTarget).siblings().removeClass('selected');
             $(el.currentTarget).addClass('selected');
