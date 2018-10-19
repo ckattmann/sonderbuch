@@ -42,6 +42,7 @@ $(document).ready(function() {
         $(this).addClass('selected');
         tools.clearTimers();
         $('#mainarea').empty();
+        $('.daterangepicker').remove();        
 
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
@@ -136,6 +137,7 @@ $(document).ready(function() {
         $(this).addClass('selected');
         tools.clearTimers();
         $('#mainarea').empty();
+        $('.daterangepicker').remove();
 
         var currentMinDate = 0;
         var currentMaxDate = 0;
@@ -168,7 +170,7 @@ $(document).ready(function() {
             endDate: moment().startOf('hour').add(32, 'hour'),
             locale: {
               format: 'M/DD hh:mm A'
-            }
+            },
         });
 
         $('#random-timeframe').on('apply.daterangepicker',function(event,obj) {
@@ -491,6 +493,7 @@ $(document).ready(function() {
         $(this).addClass('selected');
         tools.clearTimers();
         $('#mainarea').empty();
+        $('.daterangepicker').remove();
 
         $.ajax({
             type: 'GET',
