@@ -37,6 +37,7 @@
     "@material/button": "^0.39.1",
     "@material/form-field": "^0.39.1",
     "@material/select": "^0.39.1",
+    "@material/tab": "^0.40.1",
     "@material/textfield": "^0.39.1",
     "daterangepicker": "^3.0.3",
     "dygraphs": "^2.1.0",
