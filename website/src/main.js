@@ -37,6 +37,8 @@ var coordinates = {lat:48.7300084,lng:9.26214570000002};
 var selectedLabel;
 
 window.timers = [];
+window.statusTimer = false;
+window.mapTimer = false;
 
 $(document).ready(function() {
     $('#link-map').click(function() {
@@ -45,6 +47,8 @@ $(document).ready(function() {
         tools.clearTimers();
         $('#mainarea').empty();
         $('.daterangepicker').remove();
+        window.statusTimer = false;
+        window.mapTimer = true;
         console.log(window.timers.length);        
 
         // Noch in pug umwandeln:
@@ -118,19 +122,16 @@ $(document).ready(function() {
                     }
                 },
                 complete: function () {
-                    // stopTimestamp = Date.now();
-                    // let timedelta;
-                    // if ((1000 - (stopTimestamp - startTimestamp)) < 0) {
-                    //     timedelta = 0;
-                    //     updateTooltip();
-                    // } else {
-                    //     timedelta = 1000 - (stopTimestamp - startTimestamp);
-                    //     window.timers.push(window.setTimeout(updateTooltip, timedelta));
-                    // }
-                    // console.log(window.timers);
+                    stopTimestamp = Date.now();
+                    let currentTimeout = (stopTimestamp - startTimestamp - 1000);
+                    if (currentTimeout < 0) {
+                        currentTimeout = 0;
+                    }
+                    if (window.mapTimer == true) {
+                        window.timers.push(window.setTimeout(updateTooltip, 500));
+                    }
                 },
             });
-            window.timers.push(window.setTimeout(updateTooltip, 1000));
         }
         updateTooltip();
     });
@@ -141,6 +142,8 @@ $(document).ready(function() {
         tools.clearTimers();
         $('#mainarea').empty();
         $('.daterangepicker').remove();
+        window.statusTimer = false;
+        window.mapTimer = false;
         console.log(window.timers.length);
 
         var currentMinDate = 0;
@@ -498,9 +501,12 @@ $(document).ready(function() {
         tools.clearTimers();
         $('#mainarea').empty();
         $('.daterangepicker').remove();
+        window.mapTimer = false;
+        window.statusTimer = true;
         console.log(window.timers.length);
 
         var now;
+        console.log('first ajax');
         $.ajax({
             type: 'GET',
             dataType: 'json',
@@ -540,6 +546,7 @@ $(document).ready(function() {
                     if (requestDict.lat && requestDict.lng) {
                         $('#gotocordsbutton' + partID)[0].disabled = false;
                     }
+                    console.log('POST cords');
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
@@ -554,12 +561,15 @@ $(document).ready(function() {
             complete: function (res) {
                 // refresh data
                 function refreshStatusInfo() {
+                    console.log('should be 0 after change page: ' + window.timers.length);
                     $.ajax({
                         type: 'GET',
                         dataType: 'json',
                         contentType: 'application/json; charset=UTF-8',
                         url: '/api/status',
                         success: function(res) {
+                            console.log(res);
+                            
                             now = Date.now();
                             let grids = res.status.grids;
                             for (const gridname in grids) {
@@ -584,7 +594,16 @@ $(document).ready(function() {
                                     
                                 }
                             }
-                            window.timers.push(window.setTimeout(refreshStatusInfo, 500));    
+                        },
+                        complete: function (res) {                    
+                            stopTimestamp = Date.now();
+                            let currentTimeout = (stopTimestamp - startTimestamp - 1000);
+                            if (currentTimeout < 0) {
+                                currentTimeout = 0;
+                            }
+                            if (window.statusTimer == true) {
+                                window.timers.push(window.setTimeout(refreshStatusInfo, 500));
+                            }                          
                         },
                     });
                 }
