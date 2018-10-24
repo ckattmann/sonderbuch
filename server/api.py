@@ -144,12 +144,13 @@ def write_to_db():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal']
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] != '_internal' and d['name'] != 'Sonderbuch_20180628']
     status['grids'] = {}
+    t0 = time.time()
     for db in available_databases:
         t1 = time.time()
         CLIENT.switch_database(db)
-        status['time_for_switching'] = time.time() - t1
+        #status['time_for_switching'] = time.time() - t1
         t2 = time.time()
         status['grids'][db] = {}
         if db in coordinates.keys():
@@ -157,24 +158,25 @@ def get_status():
         else:
             status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
         status['grids'][db]['measurements'] = {}
-        status['time_for_coordinates'] = time.time() - t2
+        #status['time_for_coordinates'] = time.time() - t2
         for location in [d['name'] for d in CLIENT.get_list_measurements()]:
             try:
                 t3 = time.time()
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
                 t4 = time.time()
-                status['get last values for ' + location] = t5 - t4
+                status['get_last_values_for_' + location] = t4 - t3
                 result = list(result.get_points())[0]
                 t5 = time.time()
-                status['sort result for ' + location] = t5 - t4
+                #status['sort_result_for_' + location] = t5 - t4
                 result['U1'] = result.pop('last')
                 t6 = time.time()
-                status['select last from dict for ' + location] = t6 - t5
+                #status['select_last_from_dict_for_' + location] = t6 - t5
                 status['grids'][db]['measurements'][location] = result
-                status['putting in dict for ' + location] = time.time() - t6
+                #status['putting_in_dict_for_' + location] = time.time() - t6
             except:
                 pass
-        status['total_time'] = time.time() - t1
+        #status['total_time_measurements'] = time.time() - t1
+    status['total_time_databases'] = time.time() - t0
     return jsonify({'status':status})
 
 @app.route('/api/update', methods=['POST'])
