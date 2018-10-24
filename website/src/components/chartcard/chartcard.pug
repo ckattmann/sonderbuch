@@ -3,44 +3,25 @@ div.chartgraph
         #chartselection-container
             .charttitlebar
                 .bartitle Location:
-                .mdc-select
-                    select#select-location.select-location.mdc-select__native-control
-                    label.mdc-floating-label.mdc-floating-label--float-above Select location
-                    .mdc-line-ripple
+                select#select-location.select-location.select
 
             #container-values.charttitlebar
                 .bartitle Values:
                 #values-options.option-container
                     each desc, key in values
-                        button.mdc-tab.option-button(role="tab", aria-selected="false", tabindex="-1")
-                            span.mdc-tab__content
-                                span.mdc-tab__text-label.chartoption(id=desc.id, data-values=desc.values)= key
-                            span.mdc-tab-indicator
-                                span.mdc-tab-indicator__content.mdc-tab-indicator__content--underline
-                            span.mdc-tab__ripple
-                        //.chartoption(id=desc.id, data-values=desc.values)= key
+                        button.chartoption.button(id=desc.id, data-values=desc.values)= key
 
             #timeselectbar.charttitlebar
                 .bartitle Time Interval:
                 #timeInterval-options.option-container
                     each desc, key in timeIntervals
-                        button.mdc-tab.option-button(role="tab", aria-selected="false", tabindex="-1")
-                            span.mdc-tab__content
-                                span.mdc-tab__text-label.chartoption(id=desc.id, data-timeinterval=desc.values)= key
-                            span.mdc-tab-indicator
-                                span.mdc-tab-indicator__content.mdc-tab-indicator__content--underline
-                            span.mdc-tab__ripple
-                    button.mdc-tab.option-button(role="tab", aria-selected="false", tabindex="-1").chartoption#random-timeframe
-                        span.mdc-tab__content
-                            span.mdc-tab__text-label.chartoption Custom Range
-                        span.mdc-tab-indicator
-                            span.mdc-tab-indicator__content.mdc-tab-indicator__content--underline
-                        span.mdc-tab__ripple
+                        button.chartoption.button(id=desc.id, data-timeinterval=desc.values)= key
+                    button.chartoption.button.chartoption#random-timeframe Custom Range
 
             #container-aggregation.charttitlebar
                 .bartitle Aggregation:
-                input#input-aggtime(value="10")
-                select#select-timeUnit
+                input#input-aggtime.input(type="number", value="10")
+                select#select-timeUnit.select
                     option(value='s') Seconds
                     option(value='m',selected='selected') Minutes
                     option(value='h') Hours

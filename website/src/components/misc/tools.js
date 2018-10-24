@@ -60,7 +60,7 @@ export function barChartPlotter(e) {
 }
 
 export function clearTimers() {
-    for (var i = timers.length-1; i>=0; i--) {
+    for (var i = window.timers.length-1; i>=0; i--) {
         window.clearTimeout(window.timers[i]);
     }
     window.timers = [];

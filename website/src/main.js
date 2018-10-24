@@ -4,6 +4,8 @@ import 'moment';
 import 'daterangepicker';
 //import Vue from 'vue';
 
+import {MDCTab, MDCTabFoundation} from '@material/tab';
+
 import * as tools from './components/misc/tools.js';
 
 import 'daterangepicker/daterangepicker.css';
@@ -42,7 +44,8 @@ $(document).ready(function() {
         $(this).addClass('selected');
         tools.clearTimers();
         $('#mainarea').empty();
-        $('.daterangepicker').remove();        
+        $('.daterangepicker').remove();
+        console.log(window.timers.length);        
 
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
@@ -138,6 +141,7 @@ $(document).ready(function() {
         tools.clearTimers();
         $('#mainarea').empty();
         $('.daterangepicker').remove();
+        console.log(window.timers.length);
 
         var currentMinDate = 0;
         var currentMaxDate = 0;
@@ -494,7 +498,9 @@ $(document).ready(function() {
         tools.clearTimers();
         $('#mainarea').empty();
         $('.daterangepicker').remove();
+        console.log(window.timers.length);
 
+        var now;
         $.ajax({
             type: 'GET',
             dataType: 'json',
@@ -502,7 +508,7 @@ $(document).ready(function() {
             // data: req,
             success: function(res) {
                 var status = res.status;
-                var now = Date.now();
+                now = Date.now();
                 let index = 0
                 for (var grid in status.grids) {
                     status.grids[grid].id = index;
@@ -544,6 +550,8 @@ $(document).ready(function() {
                         },
                     });
                 });
+            },
+            complete: function (res) {
                 // refresh data
                 function refreshStatusInfo() {
                     $.ajax({
@@ -560,13 +568,13 @@ $(document).ready(function() {
                                     for (const location in measurements){
                                         if (measurements.hasOwnProperty(location)) {
                                             let location_id = location.replace(/\s/g, '')+'-'+gridname.replace(/\s/g, '');
-                                            let loc_el = $('#'+location_id).children();
+                                            let loc_el = $('#'+location_id).children();                                          
                                             for (let index = 1; index < loc_el.length; index++) {
                                                 const element = loc_el[index];
-                                                if (element.className.slice(0,-1) == 'U') {
-                                                    element.innerText = measurements[location][element.className] + ' V';
-                                                } else if (element.className.slice(0,-1) == 'THDU') {
-                                                    element.innerText = measurements[location][element.className] + '%';
+                                                if (element.classList[1].slice(0,-1) == 'U') {
+                                                    element.innerText = measurements[location][element.classList[1]] + ' V';
+                                                } else if (element.classList[1].slice(0,-1) == 'THDU') {
+                                                    element.innerText = measurements[location][element.classList[1]] + '%';
                                                 } else {
                                                     element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
                                                 } 
@@ -576,7 +584,7 @@ $(document).ready(function() {
                                     
                                 }
                             }
-                            window.timers.push(window.setTimeout(refreshStatusInfo, 1000));    
+                            window.timers.push(window.setTimeout(refreshStatusInfo, 500));    
                         },
                     });
                 }

@@ -1,37 +1,34 @@
 div#status
     each desc, gridname in grids
-        .card
-            table.statustable
-                tr.header
-                    td(colspan=999, id="gridname-" + gridname.replace(/\s/g, '')) #{gridname} 
-                tr.cordsinfo
-                    td(colspan=999)
-                        div.cordsinfosetting
-                            span Coordinates:
-                            input(type="value", placeholder="Latitude", value=desc.coordinates.lat, id="lat-"+gridname.replace(/\s/g, '')).mdc-text-field__input.cordsinput
-                            input(type="value", placeholder="Longitude", value=desc.coordinates.lng, id="lng-"+gridname.replace(/\s/g, '')).mdc-text-field__input.cordsinput
-                            button(id="cordbutton-" + gridname.replace(/\s/g, '')).mdc-button--raised.mdc-button.cordsbutton Set
-                            if desc.buttonDisabled
-                                button(id="gotocordsbutton-" + gridname.replace(/\s/g, ''), disabled).mdc-button--raised.mdc-button.gotocordsbutton view on map
-                            else
-                                button(id="gotocordsbutton-" + gridname.replace(/\s/g, '')).mdc-button--raised.mdc-button.gotocordsbutton view on map
-                            
-                tr.columntitles
-                    td ID
-                    td U1
-                    td U2
-                    td U3
-                    td THD1
-                    td THD2
-                    td THD3
-                    td Last Status
+        .cardinfo
+            .statustable
+                .header(id="gridname-" + gridname.replace(/\s/g, '')) #{gridname} 
+                .cordsinfosetting
+                    span Coordinates:
+                    .spacer
+                    input(type="value", placeholder="Latitude", value=desc.coordinates.lat, id="lat-"+gridname.replace(/\s/g, '')).input.cordsinput
+                    input(type="value", placeholder="Longitude", value=desc.coordinates.lng, id="lng-"+gridname.replace(/\s/g, '')).input.cordsinput
+                    button(id="cordbutton-" + gridname.replace(/\s/g, '')).button.cordsbutton Set
+                    if desc.buttonDisabled
+                        button(id="gotocordsbutton-" + gridname.replace(/\s/g, ''), disabled).button.gotocordsbutton View on map
+                    else
+                        button(id="gotocordsbutton-" + gridname.replace(/\s/g, '')).button.gotocordsbutton View on map          
+                .columntitles
+                    .firstct ID
+                    .allothers U2
+                    .allothers U1
+                    .allothers U3
+                    .allothers THD1
+                    .allothers THD2
+                    .allothers THD3
+                    .allothers Last Status
                 each location, location_id in desc.measurements
-                    tr.gridrow(id=location_id.replace(/\s/g, '')+'-'+ gridname.replace(/\s/g, ''))
-                        td.location_id #{location_id}
-                        td.U1 #{location.U1} V
-                        td.U2 #{location.U2} V
-                        td.U3 #{location.U3} V
-                        td.THDU1 #{location.THDU1}%
-                        td.THDU2 #{location.THDU2}%
-                        td.THDU3 #{location.THDU3}%
-                        td.timeSinceLastStatus #{location.timeSinceLastStatusText} ago
+                    .gridrow(id=location_id.replace(/\s/g, '')+'-'+ gridname.replace(/\s/g, ''))
+                        .firstct.location_id #{location_id}
+                        .allothers.U2 #{location.U2} V
+                        .allothers.U1 #{location.U1} V
+                        .allothers.U3 #{location.U3} V
+                        .allothers.THDU1 #{location.THDU1}%
+                        .allothers.THDU2 #{location.THDU2}%
+                        .allothers.THDU3 #{location.THDU3}%
+                        .allothers.timeSinceLastStatus #{location.timeSinceLastStatusText} ago
