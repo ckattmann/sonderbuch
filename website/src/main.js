@@ -49,7 +49,7 @@ $(document).ready(function() {
         $('.daterangepicker').remove();
         window.statusTimer = false;
         window.mapTimer = true;
-        console.log(window.timers.length);        
+        // console.log(window.timers.length);        
 
         // Noch in pug umwandeln:
         $('#mainarea').append('<div id="mapdiv"></div>');
@@ -86,7 +86,7 @@ $(document).ready(function() {
                                         measurement.name = measurement_key;
                                         
                                         var now = Date.now();
-                                        measurement.timeSinceLastStatus = (now - measurement.time) / 1000;
+                                        //measurement.timeSinceLastStatus = (now - measurement.time) / 1000;
                                         if (parseFloat(measurement.THDU1) > 99) {
                                             measurement.THDU1 = '0';
                                         }
@@ -96,8 +96,8 @@ $(document).ready(function() {
                                         if (parseFloat(measurement.THDU3) > 99) {
                                             measurement.THDU3 = '0';
                                         }
-                                        var secondsSinceLastStatus = (now - measurement.time) / 1000;
-                                        measurement.timeSinceLastStatus = secondsSinceLastStatus;
+                                        let secondsSinceLastStatus = (now - measurement.time) / 1000;
+                                        //measurement.timeSinceLastStatus = secondsSinceLastStatus;
                                         tooltipsMarkerInfo.timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
     
                                         //$('.U1').css('color',tools.colormap(Math.abs(parseFloat(measurement.U1) - 230) / 23 * 100));
@@ -144,7 +144,7 @@ $(document).ready(function() {
         $('.daterangepicker').remove();
         window.statusTimer = false;
         window.mapTimer = false;
-        console.log(window.timers.length);
+        // console.log(window.timers.length);
 
         var currentMinDate = 0;
         var currentMaxDate = 0;
@@ -503,10 +503,10 @@ $(document).ready(function() {
         $('.daterangepicker').remove();
         window.mapTimer = false;
         window.statusTimer = true;
-        console.log(window.timers.length);
+        // console.log(window.timers.length);
 
         var now;
-        console.log('first ajax');
+        // console.log('first ajax');
         $.ajax({
             type: 'GET',
             dataType: 'json',
@@ -526,7 +526,7 @@ $(document).ready(function() {
                         status.grids[grid].buttonDisabled = true;
                     }
                     for (let measurement in status.grids[grid].measurements) {
-                        var secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
+                        let secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
                         status.grids[grid].measurements[measurement].timeSinceLastStatus = secondsSinceLastStatus;
                         status.grids[grid].measurements[measurement].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
                     }
@@ -546,7 +546,7 @@ $(document).ready(function() {
                     if (requestDict.lat && requestDict.lng) {
                         $('#gotocordsbutton' + partID)[0].disabled = false;
                     }
-                    console.log('POST cords');
+                    // console.log('POST cords');
                     $.ajax({
                         type: 'POST',
                         dataType: 'json',
@@ -561,14 +561,14 @@ $(document).ready(function() {
             complete: function (res) {
                 // refresh data
                 function refreshStatusInfo() {
-                    console.log('should be 0 after change page: ' + window.timers.length);
+                    // console.log('should be 0 after change page: ' + window.timers.length);
                     $.ajax({
                         type: 'GET',
                         dataType: 'json',
                         contentType: 'application/json; charset=UTF-8',
                         url: '/api/status',
                         success: function(res) {
-                            console.log(res);
+                            // console.log(res);
                             
                             now = Date.now();
                             let grids = res.status.grids;
