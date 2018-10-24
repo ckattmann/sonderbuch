@@ -159,17 +159,22 @@ def get_status():
         status['grids'][db]['measurements'] = {}
         status['time_for_coordinates'] = time.time() - t2
         for location in [d['name'] for d in CLIENT.get_list_measurements()]:
-            t3 = time.time()
             try:
+                t3 = time.time()
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
+                t4 = time.time()
+                status['get last values for ' + location] = t5 - t4
                 result = list(result.get_points())[0]
-                result['U1'] = result.pop('last')
-                status['grids'][db]['measurements'][location] = result
                 t5 = time.time()
+                status['sort result for ' + location] = t5 - t4
+                result['U1'] = result.pop('last')
+                t6 = time.time()
+                status['select last from dict for ' + location] = t6 - t5
+                status['grids'][db]['measurements'][location] = result
+                status['putting in dict for ' + location] = time.time() - t6
             except:
                 pass
-            status['time_for_values'] = time.time() - t3
-            status['total_time'] = time.time() - t1
+        status['total_time'] = time.time() - t1
     return jsonify({'status':status})
 
 @app.route('/api/update', methods=['POST'])
