@@ -1,14 +1,13 @@
 import Dygraph from 'dygraphs';
 import 'leaflet';
 import 'moment';
-import 'daterangepicker';
+//import 'daterangepicker';
 //import Vue from 'vue';
 
-import {MDCTab, MDCTabFoundation} from '@material/tab';
-
 import * as tools from './components/misc/tools.js';
+import './components/misc/daterangepicker.js';
 
-import 'daterangepicker/daterangepicker.css';
+import './components/misc/daterangepicker.sass';
 import 'leaflet/dist/leaflet.css';
 import 'dygraphs/dist/dygraph.css';
 
@@ -173,12 +172,16 @@ $(document).ready(function() {
         $('#random-timeframe').daterangepicker({
             autoApply: true,
             timePicker: true,
+            timePicker24Hour: true,
+            timePickerSeconds: true,
+            opens: 'left',
             startDate: moment().startOf('hour'),
             endDate: moment().startOf('hour').add(32, 'hour'),
             locale: {
-              format: 'M/DD hh:mm A'
+              format: 'DD:MM:YYYY hh:mm:ss'
             },
-        });
+            buttonClasses: 'button'
+        });        
 
         $('#random-timeframe').on('apply.daterangepicker',function(event,obj) {
             //console.log(obj.endDate.valueOf());
