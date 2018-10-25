@@ -66,7 +66,9 @@ $(document).ready(function() {
             startTimestamp = Date.now()
             $.ajax({
                 type: 'GET',
+                cache: false,
                 dataType: 'json',
+                contentType: 'application/json; charset=UTF-8',
                 url: '/api/status',
                 success: function(res) {                  
                     let index = 0;
@@ -238,6 +240,7 @@ $(document).ready(function() {
             $.ajax({
                 type: 'POST',
                 dataType: 'json',
+                cache: false,
                 contentType: 'application/json; charset=UTF-8',
                 url: '/api/query',
                 data: JSON.stringify(requestDict),
@@ -451,7 +454,9 @@ $(document).ready(function() {
         // Setup the selection at the top
         $.ajax({
             type: 'GET',
+            cache: false,
             dataType: 'json',
+            contentType: 'application/json; charset=UTF-8',
             url: '/api/status',
             success: function(res) {
                 var status = res.status;
@@ -512,7 +517,9 @@ $(document).ready(function() {
         // console.log('first ajax');
         $.ajax({
             type: 'GET',
+            cache: false,
             dataType: 'json',
+            contentType: 'application/json; charset=UTF-8',
             url: '/api/status',
             // data: req,
             success: function(res) {
@@ -552,6 +559,7 @@ $(document).ready(function() {
                     // console.log('POST cords');
                     $.ajax({
                         type: 'POST',
+                        cache: false,
                         dataType: 'json',
                         contentType: 'application/json; charset=UTF-8',
                         url: '/api/update',
@@ -567,6 +575,7 @@ $(document).ready(function() {
                     // console.log('should be 0 after change page: ' + window.timers.length);
                     $.ajax({
                         type: 'GET',
+                        cache: false,
                         dataType: 'json',
                         contentType: 'application/json; charset=UTF-8',
                         url: '/api/status',
