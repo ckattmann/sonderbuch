@@ -38,6 +38,7 @@ var selectedLabel;
 window.timers = [];
 window.statusTimer = false;
 window.mapTimer = false;
+var timeout = 500;
 
 $(document).ready(function() {
     $('#link-map').click(function() {
@@ -124,12 +125,12 @@ $(document).ready(function() {
                 },
                 complete: function () {
                     stopTimestamp = Date.now();
-                    let currentTimeout = (stopTimestamp - startTimestamp - 1000);
+                    let currentTimeout = (stopTimestamp - startTimestamp - timeout);
                     if (currentTimeout < 0) {
                         currentTimeout = 0;
                     }
                     if (window.mapTimer == true) {
-                        window.timers.push(window.setTimeout(updateTooltip, 500));
+                        window.timers.push(window.setTimeout(updateTooltip, timeout));
                     }
                 },
             });
@@ -624,12 +625,12 @@ $(document).ready(function() {
                         },
                         complete: function (res) {                    
                             stopTimestamp = Date.now();
-                            let currentTimeout = (stopTimestamp - startTimestamp - 1000);
+                            let currentTimeout = (stopTimestamp - startTimestamp - timeout);
                             if (currentTimeout < 0) {
                                 currentTimeout = 0;
                             }
                             if (window.statusTimer == true) {
-                                window.timers.push(window.setTimeout(refreshStatusInfo, 500));
+                                window.timers.push(window.setTimeout(refreshStatusInfo, timeout));
                             }                          
                         },
                     });
