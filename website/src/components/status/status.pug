@@ -6,12 +6,13 @@ div#status
                 .cordsinfosetting
                     span Coordinates:
                     .spacer
-                    input(type="value", placeholder="Latitude", value=desc.coordinates.lat, id="lat-"+gridname.replace(/\s/g, '')).input.cordsinput
-                    input(type="value", placeholder="Longitude", value=desc.coordinates.lng, id="lng-"+gridname.replace(/\s/g, '')).input.cordsinput
-                    button(id="cordbutton-" + gridname.replace(/\s/g, '')).button.cordsbutton Set
+                    input(type="text", placeholder="Latitude", value=desc.coordinates.lat, id="lat-"+gridname.replace(/\s/g, '') pattern="-?([0-9]{1,2})|([0-9]{1,2}[.][0-9]+)" required).input.cordsinput
+                    input(type="text", placeholder="Longitude", value=desc.coordinates.lng, id="lng-"+gridname.replace(/\s/g, '') , pattern="-?([1]?[0-9]{1,2})|([0-9]{1,2}[.][0-9]+)" required).input.cordsinput
                     if desc.buttonDisabled
+                        button(id="cordbutton-" + gridname.replace(/\s/g, ''), disabled).button.cordsbutton Set
                         button(id="gotocordsbutton-" + gridname.replace(/\s/g, ''), disabled).button.gotocordsbutton View on map
                     else
+                        button(id="cordbutton-" + gridname.replace(/\s/g, '')).button.cordsbutton Set
                         button(id="gotocordsbutton-" + gridname.replace(/\s/g, '')).button.gotocordsbutton View on map          
                 .columntitles
                     .firstct ID

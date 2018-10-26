@@ -1,6 +1,7 @@
 */__pycache__
 website/node_modules
 
+*.code-workspace
 *.swp
 *.swo
 *.pyc

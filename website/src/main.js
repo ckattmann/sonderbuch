@@ -543,8 +543,25 @@ $(document).ready(function() {
                     index++;
                 }
                 //console.log(status);
-                             
+                console.log(res.status);
+                      
                 $('#mainarea').append(status_html(status));
+
+                // verify correct input of coordinates and toggle buttons
+                let cordsInputs = $('.cordsinput');
+                for (let index = 0; index < cordsInputs.length; index++) {
+                    const element = cordsInputs[index];
+                    element.addEventListener('keyup', function (event) {
+                        let partId = element.id.slice(3);
+                        let isValidInput = $('#lat' + partId)[0].checkValidity() && $('#lng' + partId)[0].checkValidity(); 
+                        if ( isValidInput ) {
+                            $('#cordbutton' + partId).prop('disabled', false);
+                        } else {                          
+                            $('#cordbutton' + partId).prop('disabled', true);
+                        }
+                    });
+                }
+
                 // send GPS Coordinates to server
                 $('.cordsbutton').click(function(event){
                     let requestDict = {};
@@ -553,9 +570,6 @@ $(document).ready(function() {
                     requestDict.db = $('#gridname'+partID)[0].innerText;
                     requestDict.lat = parseFloat($('#lat'+partID)[0].value);
                     requestDict.lng = parseFloat($('#lng'+partID)[0].value);
-                    if (requestDict.lat && requestDict.lng) {
-                        $('#gotocordsbutton' + partID)[0].disabled = false;
-                    }
                     // console.log('POST cords');
                     $.ajax({
                         type: 'POST',
@@ -565,6 +579,7 @@ $(document).ready(function() {
                         url: '/api/update',
                         data: JSON.stringify(requestDict),
                         success: function(res) {
+                            $('#gotocordsbutton' + partID).prop('disabled', false);
                         },
                     });
                 });
