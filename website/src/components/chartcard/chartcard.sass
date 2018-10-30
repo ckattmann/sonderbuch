@@ -32,31 +32,38 @@
                 select
                     margin: 2px
 
-    #chartlegend
-        text-align: right
-        margin-left: auto
-        padding-right: 10px
-        min-height: 23px
-        .legendlabel
-            margin-left: 10px
-            font-weight: bold
-        .withdata
-            width: 90px
-            margin-left: 5px
-            text-align: left
-
     .containerforspinner
-        width: 100%
-        min-width: 378px
-        height: calc(100% - 289px)
-        min-height: 676px
-        padding: 10px
         display: flex
+        flex-direction: column
         position: relative
         flex: 0 1 auto
+        .chartlegenddiv
+            margin-bottom: 4px
+            margin-top: 4px
+            display: flex
+            flex-direction: row
+            .sapcer
+                flex-grow: 1    
+            #chartlegend
+                text-align: right
+                margin: auto 0 auto auto
+                padding-right: 10px
+                padding-left: 5px
+                height: 23px
+                .legendlabel
+                    margin-left: 10px
+                    font-weight: bold
+                .withdata
+                    width: 90px
+                    margin-left: 5px
+                    text-align: left
         .chartdiv
             width: 100%
+            min-width: 378px
+            height: calc(100% - 289px)
+            min-height: 676px
             position: relative
+            margin-top: 10px
 
 .card
     min-width: 400px

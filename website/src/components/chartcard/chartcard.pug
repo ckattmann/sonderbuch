@@ -29,8 +29,11 @@ div.chartgraph
                     option(value='w') Weeks
 
     .card
-        #chartlegend.chartlegenddiv
         .containerforspinner
+            .chartlegenddiv
+                button.button#downloadButton(disabled) Download as JSON
+                .spacer
+                #chartlegend
             #basicchart.chartdiv
             .spinner
             .splashmessage

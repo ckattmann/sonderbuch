@@ -152,6 +152,8 @@ $(document).ready(function() {
         var currentMaxDate = 0;
         var currentMinY = 0;
         var currentMaxY = 300;
+
+        let currentVisibleData;
     
         var data = {
             values: {
@@ -194,6 +196,20 @@ $(document).ready(function() {
             });
         });
 
+        function download(filename, text) {
+            var element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        $('#downloadButton').click(function (event) {
+            download('data.json', JSON.stringify(currentVisibleData));
+        })
+
         // Options for Data Graph
         // ======================
 
@@ -214,6 +230,7 @@ $(document).ready(function() {
             $('#basicchart').fadeTo(0.5, 0.5);
             $('.spinner').css('display','block');
             $('.splashmessage').css('display','none');
+            $('#downloadButton').prop('disabled', true)
             if (selectedLabel) {
                 var selected = $('#select-location')
                 selected.val(selectedLabel);
@@ -247,9 +264,11 @@ $(document).ready(function() {
                 data: JSON.stringify(requestDict),
                 success: function(res) {
                     let data = res.data;
+                    currentVisibleData = data;
                     if (data.length == 0) {
                         $('.spinner').css('display','none');
                         $('.splashmessage').css('display','flex');
+                        $('#downloadButton').prop('disabled', true)
                         $('.splashmessage').text('No data to display');
                         g.updateOptions({'file': [], 'labels': res.labels});
                         errorflag = true;
@@ -439,6 +458,7 @@ $(document).ready(function() {
                         g.resize()
                         $('.spinner').css('display','none');
                         $('.splashmessage').css('display','none');
+                        $('#downloadButton').prop('disabled', false)
                         $('#basicchart').fadeTo(0.5, 1);
                         errorflag = false;
                     }
@@ -446,6 +466,7 @@ $(document).ready(function() {
                 error: function(res) {
                     $('.spinner').css('display','none');
                     $('.splashmessage').css('display','flex');
+                    $('#downloadButton').prop('disabled', true)
                     $('.splashmessage').text('No data to display');
                     errorflag = true;
                 },
