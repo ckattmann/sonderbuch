@@ -264,7 +264,7 @@ $(document).ready(function() {
                 data: JSON.stringify(requestDict),
                 success: function(res) {
                     let data = res.data;
-                    currentVisibleData = data;
+                    currentVisibleData = res;
                     if (data.length == 0) {
                         $('.spinner').css('display','none');
                         $('.splashmessage').css('display','flex');
