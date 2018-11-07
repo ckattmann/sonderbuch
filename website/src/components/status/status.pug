@@ -16,8 +16,8 @@ div#status
                         button(id="gotocordsbutton-" + gridname.replace(/\s/g, '')).button.gotocordsbutton View on map          
                 .columntitles
                     .firstct ID
-                    .allothers U2
                     .allothers U1
+                    .allothers U2
                     .allothers U3
                     .allothers THD1
                     .allothers THD2
@@ -26,8 +26,8 @@ div#status
                 each location, location_id in desc.measurements
                     .gridrow(id=location_id.replace(/\s/g, '')+'-'+ gridname.replace(/\s/g, ''))
                         .firstct.location_id #{location_id}
-                        .allothers.U2 #{location.U2} V
                         .allothers.U1 #{location.U1} V
+                        .allothers.U2 #{location.U2} V
                         .allothers.U3 #{location.U3} V
                         .allothers.THDU1 #{location.THDU1}%
                         .allothers.THDU2 #{location.THDU2}%
