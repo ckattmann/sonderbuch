@@ -79,39 +79,60 @@ def querydb():
     query_dict = request.get_json()
     print(query_dict)
     # Preprocess the request
-    if isinstance(query_dict['values'], str):
-        if ',' in query_dict['values']:
-            query_dict['values'] = query_dict['values'].split(',')
-        else:
-            query_dict['values'] = [query_dict['values']]
+    query_string = query_dict.get('querystring',None)
+    if query_string:
+        try:
+            query_starttime = time.time()
+            CLIENT.switch_database(query_dict['grid'])
+            query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
+            print('Query Time', time.time() - query_starttime)
+        except influxdb.exceptions.InfluxDBClientError:
+            print('Error with query string ', end='')
+            print(query_string)
+            raise
 
-    if 'avrgInterval' not in query_dict:
-        query_dict['avrgInterval'] = '10m'
+        # Parse Result:
+        try:
+            data = query_result.raw['series']
+        except:
+            print('Query result: ',query_result)
+            print('Query result raw: ',query_result.raw)
+            data = []
+        return jsonify({'data':data})  
+    else:
+        if isinstance(query_dict['values'], str):
+            if ',' in query_dict['values']:
+                query_dict['values'] = query_dict['values'].split(',')
+            else:
+                query_dict['values'] = [query_dict['values']]
 
-    # Build the query string and perform the request
-    query_string = build_query_string(query_dict)
-    try:
-        query_starttime = time.time()
-        CLIENT.switch_database(query_dict['grid'])
-        query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
-        print('Query Time', time.time() - query_starttime)
-    except influxdb.exceptions.InfluxDBClientError:
-        print('Error with query string ', end='')
-        print(query_string)
-        raise
+        if 'avrgInterval' not in query_dict:
+            query_dict['avrgInterval'] = '10m'
 
-    # Parse Result:
-    try:
-        data = query_result.raw['series'][0]['values']
-    except:
-        print('Query result: ',query_result)
-        print('Query result raw: ',query_result.raw)
-        data = []
+        # Build the query string and perform the request
+        query_string = build_query_string(query_dict)
+        try:
+            query_starttime = time.time()
+            CLIENT.switch_database(query_dict['grid'])
+            query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
+            print('Query Time', time.time() - query_starttime)
+        except influxdb.exceptions.InfluxDBClientError:
+            print('Error with query string ', end='')
+            print(query_string)
+            raise
 
-    labels = ['time']
-    labels.extend(query_dict['values'])
+        # Parse Result:
+        try:
+            data = query_result.raw['series'][0]['values']
+        except:
+            print('Query result: ',query_result)
+            print('Query result raw: ',query_result.raw)
+            data = []
 
-    return jsonify({'data':data, 'labels':labels})
+        labels = ['time']
+        labels.extend(query_dict['values'])
+
+        return jsonify({'data':data, 'labels':labels})
 
 
 @app.route('/api/write', methods=['POST'])

@@ -52,22 +52,62 @@ def parse_timeInterval(timeInterval, database, measurement, firstqueryvalue):
 def build_query_string(query_dict):
     ''' Build an IndexQL query string from the given dictionary '''
 
+    firstqueryvalue = None
     # SELECT
+    # all numeric values - group by time() and therefore mean() can be applied
     select_string = 'SELECT '
-    if isinstance(query_dict['values'], list):
-        selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
-    elif isinstance(query_dict['values'], str):
-        selected_string = query_dict['values']
-    else:
-        print('selected_string', repr(query_dict['values']))
+    if query_dict.get('values',False):  
+        if isinstance(query_dict['values'], list):
+            firstqueryvalue = query_dict['values'][0]
+            selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
+        elif isinstance(query_dict['values'], str):
+            firstqueryvalue = query_dict['nonnumericvalues']
+            selected_string = query_dict['values']
+        else:
+            selected_string=""
+            print('selected_string', repr(query_dict['values']))
+        
 
-    select_string += selected_string
+        select_string += selected_string
+    else:
+        # all non numeric values - group by time() and therefore mean() can NOT be applied!
+        if query_dict.get('nonnumericvalues',False):  
+            if isinstance(query_dict['nonnumericvalues'], list):
+                firstqueryvalue = query_dict['nonnumericvalues'][0]
+                selected_string = ','.join(query_dict['nonnumericvalues'])
+            elif isinstance(query_dict['nonnumericvalues'], str):
+                firstqueryvalue = query_dict['nonnumericvalues']
+                selected_string = query_dict['nonnumericvalues']
+            else:
+                selected_string=""
+                print('selected_string', repr(query_dict['nonnumericvalues']))
+
+            select_string += selected_string
+
     # FROM
     from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
     # WHERE
-    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],query_dict['values'][0])
+    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],firstqueryvalue)
     # GROUPBY
-    groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
+    groupby_string = 'GROUP BY '
+    # timeinterval
+    if query_dict.get('values',False):
+         groupby_string += 'time('+query_dict['avrgInterval']+')'
+    
+    # tags    
+    groupbyTags = query_dict.get('groupbyTags',None)    
+    if groupbyTags:
+        # make a list 
+        if isinstance(groupbyTags,str):
+            if ',' in groupbyTags:
+                groupbyTags = groupbyTags.split(',')
+            else:
+                groupbyTags = [groupbyTags]
+        # prepend to existing group by clause
+        if len(groupby_string) > 9:
+            groupby_string += ","+",".join(groupbyTags)
+        else:
+            groupby_string += ",".join(groupbyTags) 
 
     query_string = ' '.join([select_string, from_string, where_string, groupby_string])
 
@@ -80,6 +120,8 @@ def querydb():
     print(query_dict)
     # Preprocess the request
     query_string = query_dict.get('querystring',None)
+    values = query_dict.get('values',None)    
+    nonnumericvalues = query_dict.get('nonnumericvalues',None)
     if query_string:
         try:
             query_starttime = time.time()
@@ -100,11 +142,22 @@ def querydb():
             data = []
         return jsonify({'data':data})  
     else:
-        if isinstance(query_dict['values'], str):
-            if ',' in query_dict['values']:
-                query_dict['values'] = query_dict['values'].split(',')
-            else:
-                query_dict['values'] = [query_dict['values']]
+        if values:
+            if isinstance(query_dict['values'], str):
+                if ',' in query_dict['values']:
+                    query_dict['values'] = query_dict['values'].split(',')
+                else:
+                    query_dict['values'] = [query_dict['values']]
+        if nonnumericvalues:
+            if isinstance(nonnumericvalues, str):
+                if ',' in nonnumericvalues:
+                    query_dict['nonnumericvalues'] = nonnumericvalues.split(',')
+                else:
+                    query_dict['nonnumericvalues'] = [nonnumericvalues]
+
+        if not values and not nonnumericvalues:
+            print("no values to query for!")
+            #raise
 
         if 'avrgInterval' not in query_dict:
             query_dict['avrgInterval'] = '10m'
@@ -130,8 +183,10 @@ def querydb():
             data = []
 
         labels = ['time']
-        labels.extend(query_dict['values'])
-
+        if values: 
+            labels.extend(query_dict['values'])
+        elif nonnumericvalues:
+            labels.extend(query_dict['nonnumericvalues'])
         return jsonify({'data':data, 'labels':labels})
 
 
