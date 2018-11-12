@@ -137,12 +137,6 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
-    try:
-        with open("writelog.txt","a") as f:
-            #f.write("{}: IP = {}\n".format(str(datetime.datetime.now()),request.environ.get('HTTP_X_REAL_IP',request.remote_addr)))
-            pass
-    except:
-        pass
     req = request.get_json()
     database = req['grid']
     datapoints = req['datapoints']
@@ -171,21 +165,22 @@ def write_sensor_data_to_db():
     database = "Sensors"
     # get the request data as json
     rdata = request.get_json(force=True)
-
+    datapoints=[]
     keys = rdata.keys()
-    for key in keys:
-        with open("keys.txt","a") as f:
-            f.write(str(key)+"\n")
+    #for key in keys:
+        #with open("keys.txt","a") as f:
+        #    f.write(str(key)+": "+str(rdata[key])+"\n")
+        
 
     if database not in [d['name'] for d in CLIENT.get_list_database()]:
-            CLIENT.create_database(database)
-        # Write data to DB
-        try:
-            CLIENT.write_points(datapoints, database=database, time_precision='s')
-        except:
-            print('Error during writing process')
-            print(datapoints)
-            raise
+        CLIENT.create_database(database)
+    # Write data to DB
+    try:
+        CLIENT.write_points(datapoints, database=database, time_precision='s')
+    except:
+        print('Error during writing process')
+        print(datapoints)
+        raise
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
