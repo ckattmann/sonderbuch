@@ -166,6 +166,28 @@ def write_to_db():
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
+@app.route('/api/sensors', methods=['POST'])
+def write_sensor_data_to_db():
+    database = "Sensors"
+    # get the request data as json
+    rdata = request.get_json(force=True)
+
+    keys = rdata.keys()
+    for key in keys:
+        with open("keys.txt","a") as f:
+            f.write(str(key)+"\n")
+
+    if database not in [d['name'] for d in CLIENT.get_list_database()]:
+            CLIENT.create_database(database)
+        # Write data to DB
+        try:
+            CLIENT.write_points(datapoints, database=database, time_precision='s')
+        except:
+            print('Error during writing process')
+            print(datapoints)
+            raise
+
+    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
 @app.route('/api/flexibilities/available',methods=['GET'])
 def get_available_flexibilities():
