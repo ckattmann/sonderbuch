@@ -2,6 +2,7 @@ import os
 import json
 import time
 import datetime
+import pytz 
 import logging
 from flask import Flask, request, jsonify
 import influxdb
@@ -166,11 +167,34 @@ def write_sensor_data_to_db():
     # get the request data as json
     rdata = request.get_json(force=True)
     datapoints=[]
-    keys = rdata.keys()
-    #for key in keys:
+    fields={}
+    for key,item in rdata.items():
         #with open("keys.txt","a") as f:
         #    f.write(str(key)+": "+str(rdata[key])+"\n")
-        
+        if key == "devaddr":
+            devaddr=str(item)
+        elif key == "data":
+            fields[key]=str(item)
+        elif key == "datetime":
+            ger_tz = pytz.timezone('Europe/Berlin')
+            dtime = ger_tz.normalize(ger_tz.localize(item, is_dst=True))
+        elif "field" in key:
+            if key[-1]=="1":
+                fields["temperature"]=item
+            elif key[-1]=="2":
+                fields["ghi"]=item
+            else:
+                fields[key]=item
+        else:
+            fields[key]=item
+    datapoint = {
+        'grid': database,
+        'measurement': devaddr,
+        'time': dtime,
+        'fields': {str(key):item for key,item in fields.items()},
+        'tags': {}
+    }
+    datapoints.append(datapoint)        
 
     if database not in [d['name'] for d in CLIENT.get_list_database()]:
         CLIENT.create_database(database)
