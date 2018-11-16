@@ -170,14 +170,16 @@ def write_sensor_data_to_db():
     fields={}
     for key,item in rdata.items():
         #with open("keys.txt","a") as f:
-        #    f.write(str(key)+": "+str(rdata[key])+"\n")
+        #    f.write(str(key)+": "+str(item)+" "+str(type(item))+"\n")
         if key == "devaddr":
             devaddr=str(item)
         elif key == "data":
             fields[key]=str(item)
         elif key == "datetime":
+            utc_tz = pytz.utc
             ger_tz = pytz.timezone('Europe/Berlin')
-            dtime = ger_tz.normalize(ger_tz.localize(item, is_dst=True))
+            # datetime is str of form: 2018-11-16T08:25:59Z
+            dtime = utc_tz.normalize(utc_tz.localize(datetime.datetime.strptime(item,"%Y-%m-%dT%H:%M:%SZ"), is_dst=False))
         elif "field" in key:
             if key[-1]=="1":
                 fields["temperature"]=item
@@ -260,7 +262,7 @@ def get_status_flexibilities():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors']]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:
