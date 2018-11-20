@@ -2,7 +2,6 @@ import os
 import json
 import time
 import datetime
-import pytz 
 import logging
 from flask import Flask, request, jsonify
 import influxdb
@@ -138,6 +137,12 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
+    try:
+        with open("writelog.txt","a") as f:
+            #f.write("{}: IP = {}\n".format(str(datetime.datetime.now()),request.environ.get('HTTP_X_REAL_IP',request.remote_addr)))
+            pass
+    except:
+        pass
     req = request.get_json()
     database = req['grid']
     datapoints = req['datapoints']
@@ -161,94 +166,21 @@ def write_to_db():
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
-@app.route('/api/sensors', methods=['POST'])
-def write_sensor_data_to_db():
-    database = "Sensors"
-    # get the request data as json
-    rdata = request.get_json(force=True)
-    datapoints=[]
-    fields={}
-    for key,item in rdata.items():
-        #with open("keys.txt","a") as f:
-        #    f.write(str(key)+": "+str(item)+" "+str(type(item))+"\n")
-        if key == "devaddr":
-            devaddr=str(item)
-        elif key == "data":
-            fields[key]=str(item)
-        elif key == "datetime":
-            utc_tz = pytz.utc
-            ger_tz = pytz.timezone('Europe/Berlin')
-            # datetime is str of form: 2018-11-16T08:25:59Z
-            dtime = utc_tz.normalize(utc_tz.localize(datetime.datetime.strptime(item,"%Y-%m-%dT%H:%M:%SZ"), is_dst=False))
-        elif "field" in key:
-            if key[-1]=="1":
-                fields["temperature"]=item
-            elif key[-1]=="2":
-                fields["ghi"]=item
-            else:
-                fields[key]=item
-        else:
-            fields[key]=item
-    datapoint = {
-        'grid': database,
-        'measurement': devaddr,
-        'time': dtime,
-        'fields': {str(key):item for key,item in fields.items()},
-        'tags': {}
-    }
-    datapoints.append(datapoint)        
 
-    if database not in [d['name'] for d in CLIENT.get_list_database()]:
-        CLIENT.create_database(database)
-    # Write data to DB
-    try:
-        CLIENT.write_points(datapoints, database=database, time_precision='s')
-    except:
-        print('Error during writing process')
-        print(datapoints)
-        raise
-
-    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
-
-@app.route('/api/flexibilities/available',methods=['GET'])
-def get_available_flexibilities():
+@app.route('/api/flexibilities',methods=['GET'])
+def get_flexibilities():
     status={}
     flexdb="Flexibilities"
     CLIENT.switch_database(flexdb)
     for flextype in [d['name'] for d in CLIENT.get_list_measurements()]:
         try:
-            result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip', epoch='ms')
+            result = CLIENT.query('SELECT * FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip', epoch='ms')
             result = list(result.get_points())
             
             for res in result:
                 try:
                     
                     res['settings']=json.loads(json.loads(res['settings']))
-                    last=res.pop('last')
-                    ggp=res['settings'].pop('gridguard_params')
-                    cs=res['settings'].pop('centralserver')                    
-                except:
-                    pass
-            status[flextype] = result 
-        except:
-            pass
-    return jsonify({'status':status})
-
-@app.route('/api/flexibilities/status',methods=['GET'])
-def get_status_flexibilities():
-    status={}
-    flexdb="Flexibilities"
-    CLIENT.switch_database(flexdb)
-    for flextype in [d['name'] for d in CLIENT.get_list_measurements()]:
-        try:
-            result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip,flexname', epoch='ms')
-            result = list(result.get_points())
-            
-            for res in result:
-                try:
-                    
-                    res['settings']=json.loads(json.loads(res['settings']))
-                    last=res.pop('last')
                     ggp=res['settings'].pop('gridguard_params')
                     cs=res['settings'].pop('centralserver')                    
                 except:
@@ -262,7 +194,7 @@ def get_status_flexibilities():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities']]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:

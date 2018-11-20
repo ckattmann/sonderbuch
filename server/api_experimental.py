@@ -2,7 +2,6 @@ import os
 import json
 import time
 import datetime
-import pytz 
 import logging
 from flask import Flask, request, jsonify
 import influxdb
@@ -53,22 +52,62 @@ def parse_timeInterval(timeInterval, database, measurement, firstqueryvalue):
 def build_query_string(query_dict):
     ''' Build an IndexQL query string from the given dictionary '''
 
+    firstqueryvalue = None
     # SELECT
+    # all numeric values - group by time() and therefore mean() can be applied
     select_string = 'SELECT '
-    if isinstance(query_dict['values'], list):
-        selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
-    elif isinstance(query_dict['values'], str):
-        selected_string = query_dict['values']
-    else:
-        print('selected_string', repr(query_dict['values']))
+    if query_dict.get('values',False):  
+        if isinstance(query_dict['values'], list):
+            firstqueryvalue = query_dict['values'][0]
+            selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
+        elif isinstance(query_dict['values'], str):
+            firstqueryvalue = query_dict['nonnumericvalues']
+            selected_string = query_dict['values']
+        else:
+            selected_string=""
+            print('selected_string', repr(query_dict['values']))
+        
 
-    select_string += selected_string
+        select_string += selected_string
+    else:
+        # all non numeric values - group by time() and therefore mean() can NOT be applied!
+        if query_dict.get('nonnumericvalues',False):  
+            if isinstance(query_dict['nonnumericvalues'], list):
+                firstqueryvalue = query_dict['nonnumericvalues'][0]
+                selected_string = ','.join(query_dict['nonnumericvalues'])
+            elif isinstance(query_dict['nonnumericvalues'], str):
+                firstqueryvalue = query_dict['nonnumericvalues']
+                selected_string = query_dict['nonnumericvalues']
+            else:
+                selected_string=""
+                print('selected_string', repr(query_dict['nonnumericvalues']))
+
+            select_string += selected_string
+
     # FROM
     from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
     # WHERE
-    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],query_dict['values'][0])
+    where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],firstqueryvalue)
     # GROUPBY
-    groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
+    groupby_string = 'GROUP BY '
+    # timeinterval
+    if query_dict.get('values',False):
+         groupby_string += 'time('+query_dict['avrgInterval']+')'
+    
+    # tags    
+    groupbyTags = query_dict.get('groupbyTags',None)    
+    if groupbyTags:
+        # make a list 
+        if isinstance(groupbyTags,str):
+            if ',' in groupbyTags:
+                groupbyTags = groupbyTags.split(',')
+            else:
+                groupbyTags = [groupbyTags]
+        # prepend to existing group by clause
+        if len(groupby_string) > 9:
+            groupby_string += ","+",".join(groupbyTags)
+        else:
+            groupby_string += ",".join(groupbyTags) 
 
     query_string = ' '.join([select_string, from_string, where_string, groupby_string])
 
@@ -81,6 +120,8 @@ def querydb():
     print(query_dict)
     # Preprocess the request
     query_string = query_dict.get('querystring',None)
+    values = query_dict.get('values',None)    
+    nonnumericvalues = query_dict.get('nonnumericvalues',None)
     if query_string:
         try:
             query_starttime = time.time()
@@ -101,11 +142,22 @@ def querydb():
             data = []
         return jsonify({'data':data})  
     else:
-        if isinstance(query_dict['values'], str):
-            if ',' in query_dict['values']:
-                query_dict['values'] = query_dict['values'].split(',')
-            else:
-                query_dict['values'] = [query_dict['values']]
+        if values:
+            if isinstance(query_dict['values'], str):
+                if ',' in query_dict['values']:
+                    query_dict['values'] = query_dict['values'].split(',')
+                else:
+                    query_dict['values'] = [query_dict['values']]
+        if nonnumericvalues:
+            if isinstance(nonnumericvalues, str):
+                if ',' in nonnumericvalues:
+                    query_dict['nonnumericvalues'] = nonnumericvalues.split(',')
+                else:
+                    query_dict['nonnumericvalues'] = [nonnumericvalues]
+
+        if not values and not nonnumericvalues:
+            print("no values to query for!")
+            #raise
 
         if 'avrgInterval' not in query_dict:
             query_dict['avrgInterval'] = '10m'
@@ -131,13 +183,21 @@ def querydb():
             data = []
 
         labels = ['time']
-        labels.extend(query_dict['values'])
-
+        if values: 
+            labels.extend(query_dict['values'])
+        elif nonnumericvalues:
+            labels.extend(query_dict['nonnumericvalues'])
         return jsonify({'data':data, 'labels':labels})
 
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
+    try:
+        with open("writelog.txt","a") as f:
+            #f.write("{}: IP = {}\n".format(str(datetime.datetime.now()),request.environ.get('HTTP_X_REAL_IP',request.remote_addr)))
+            pass
+    except:
+        pass
     req = request.get_json()
     database = req['grid']
     datapoints = req['datapoints']
@@ -161,54 +221,6 @@ def write_to_db():
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
-@app.route('/api/sensors', methods=['POST'])
-def write_sensor_data_to_db():
-    database = "Sensors"
-    # get the request data as json
-    rdata = request.get_json(force=True)
-    datapoints=[]
-    fields={}
-    for key,item in rdata.items():
-        #with open("keys.txt","a") as f:
-        #    f.write(str(key)+": "+str(item)+" "+str(type(item))+"\n")
-        if key == "devaddr":
-            devaddr=str(item)
-        elif key == "data":
-            fields[key]=str(item)
-        elif key == "datetime":
-            utc_tz = pytz.utc
-            ger_tz = pytz.timezone('Europe/Berlin')
-            # datetime is str of form: 2018-11-16T08:25:59Z
-            dtime = utc_tz.normalize(utc_tz.localize(datetime.datetime.strptime(item,"%Y-%m-%dT%H:%M:%SZ"), is_dst=False))
-        elif "field" in key:
-            if key[-1]=="1":
-                fields["temperature"]=item
-            elif key[-1]=="2":
-                fields["ghi"]=item
-            else:
-                fields[key]=item
-        else:
-            fields[key]=item
-    datapoint = {
-        'grid': database,
-        'measurement': devaddr,
-        'time': dtime,
-        'fields': {str(key):item for key,item in fields.items()},
-        'tags': {}
-    }
-    datapoints.append(datapoint)        
-
-    if database not in [d['name'] for d in CLIENT.get_list_database()]:
-        CLIENT.create_database(database)
-    # Write data to DB
-    try:
-        CLIENT.write_points(datapoints, database=database, time_precision='s')
-    except:
-        print('Error during writing process')
-        print(datapoints)
-        raise
-
-    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
 @app.route('/api/flexibilities/available',methods=['GET'])
 def get_available_flexibilities():
@@ -262,7 +274,7 @@ def get_status_flexibilities():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities']]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:
