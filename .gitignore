@@ -10,3 +10,5 @@ website/node_modules
 *.json
 server/dbcredentials.json
 !website/package.json
+
+.vscode

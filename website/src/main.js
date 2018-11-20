@@ -88,27 +88,8 @@ $(document).ready(function() {
                                         measurement.name = measurement_key;
                                         
                                         var now = Date.now();
-                                        //measurement.timeSinceLastStatus = (now - measurement.time) / 1000;
-                                        if (parseFloat(measurement.THDU1) > 99) {
-                                            measurement.THDU1 = '0';
-                                        }
-                                        if (parseFloat(measurement.THDU2) > 99) {
-                                            measurement.THDU2 = '0';
-                                        }
-                                        if (parseFloat(measurement.THDU3) > 99) {
-                                            measurement.THDU3 = '0';
-                                        }
                                         let secondsSinceLastStatus = (now - measurement.time) / 1000;
-                                        //measurement.timeSinceLastStatus = secondsSinceLastStatus;
                                         tooltipsMarkerInfo.timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
-    
-                                        //$('.U1').css('color',tools.colormap(Math.abs(parseFloat(measurement.U1) - 230) / 23 * 100));
-                                        //$('.U2').css('color',tools.colormap(Math.abs(parseFloat(measurement.U2) - 230) / 23 * 100));
-                                        //$('.U3').css('color',tools.colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100));
-                                        //$('.thd1').css('color',tools.colormap(parseFloat(measurement.THDU1) / 8 * 100));
-                                        //$('.thd2').css('color',tools.colormap(parseFloat(measurement.THDU2) / 8 * 100));
-                                        //$('.thd3').css('color',tools.colormap(parseFloat(measurement.THDU3) / 8 * 100));
-                                        //marker.setStyle({'fillColor': tools.colormap(Math.abs(parseFloat(measurement.U3) - 230) / 23 * 100)});
                                     }
                                 }
                                 
@@ -632,8 +613,8 @@ $(document).ready(function() {
                                                 const element = loc_el[index];
                                                 if (element.classList[1].slice(0,-1) == 'U') {
                                                     element.innerText = measurements[location][element.classList[1]] + ' V';
-                                                } else if (element.classList[1].slice(0,-1) == 'THDU') {
-                                                    element.innerText = measurements[location][element.classList[1]] + '%';
+                                                } else if (element.classList[1].slice(0,-1) == 'I') {
+                                                    element.innerText = measurements[location][element.classList[1]] + ' A';
                                                 } else {
                                                     element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
                                                 } 

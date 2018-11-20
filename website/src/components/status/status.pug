@@ -19,9 +19,9 @@ div#status
                     .allothers U1
                     .allothers U2
                     .allothers U3
-                    .allothers THD1
-                    .allothers THD2
-                    .allothers THD3
+                    .allothers I1
+                    .allothers I2
+                    .allothers I3
                     .allothers Last Status
                 each location, location_id in desc.measurements
                     .gridrow(id=location_id.replace(/\s/g, '')+'-'+ gridname.replace(/\s/g, ''))
@@ -29,7 +29,7 @@ div#status
                         .allothers.U1 #{location.U1} V
                         .allothers.U2 #{location.U2} V
                         .allothers.U3 #{location.U3} V
-                        .allothers.THDU1 #{location.THDU1}%
-                        .allothers.THDU2 #{location.THDU2}%
-                        .allothers.THDU3 #{location.THDU3}%
+                        .allothers.I1 #{location.I1} A
+                        .allothers.I2 #{location.I2} A
+                        .allothers.I3 #{location.I3} A
                         .allothers.timeSinceLastStatus #{location.timeSinceLastStatusText} ago
