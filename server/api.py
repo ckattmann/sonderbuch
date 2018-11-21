@@ -186,7 +186,7 @@ def write_sensor_data_to_db():
             elif key[-1]=="2":
                 fields["ghi"]=item
             elif key[-1]=="3":
-                fields["battery"]=item
+                fields["battery"]=item/10
             else:
                 fields[key]=item
         else:
