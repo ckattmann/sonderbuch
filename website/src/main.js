@@ -612,9 +612,9 @@ $(document).ready(function() {
                                             for (let index = 1; index < loc_el.length; index++) {
                                                 const element = loc_el[index];
                                                 if (element.classList[1].slice(0,-1) == 'U') {
-                                                    element.innerText = measurements[location][element.classList[1]] + ' V';
+                                                    element.innerText = measurements[location][element.classList[1]].toFixed(3) + ' V';
                                                 } else if (element.classList[1].slice(0,-1) == 'I') {
-                                                    element.innerText = measurements[location][element.classList[1]] + ' A';
+                                                    element.innerText = measurements[location][element.classList[1]].toFixed(3) + ' A';
                                                 } else {
                                                     element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
                                                 } 
