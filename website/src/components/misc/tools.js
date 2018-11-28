@@ -65,3 +65,43 @@ export function clearTimers() {
     }
     window.timers = [];
 }
+
+export function customValueFormatter(value,seriesName, digits){
+    if (value) {
+        let dim;
+        let advalue;
+        if (value > 1000 || value < -1000) {
+            advalue = value / 1000;
+            dim = 'K';
+        } else if (value < 1 && value > -1) {
+            advalue = value * 1000;
+            dim = 'm';
+        } else {
+            advalue = value; 
+            dim = ''; 
+        }
+        if (seriesName == 'U1' || seriesName == 'U2' || seriesName == 'U3') {
+            return advalue.toFixed(digits)+ ' ' + dim +'V';
+        }
+        else if (seriesName == 'THDU1' || seriesName == 'THDU2' || seriesName == 'THDU3') {
+            return value.toFixed(digits)+'%';
+        }
+        else if (seriesName == 'I1' || seriesName == 'I2' || seriesName == 'I3') {
+            return advalue.toFixed(digits)+ ' ' + dim +'A';
+        }
+        else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
+            return advalue.toFixed(digits)+ ' ' + dim +'W';
+        }
+        else if (seriesName == 'S1' || seriesName == 'S2' || seriesName == 'S3') {
+            return advalue.toFixed(digits)+ ' ' + dim +'VA';
+        }
+        else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
+            return value.toFixed(digits);
+        } 
+        else if (seriesName == 'f') {
+            return advalue.toFixed(digits)+ ' ' + dim +'Hz';
+        }
+    } else {
+        return '-'
+    }
+}

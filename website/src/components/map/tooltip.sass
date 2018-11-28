@@ -1,6 +1,7 @@
 .tooltip
     font-size: 16px
     color: black
+    width: 330px
 
     .tooltip-title
         font-weight: bold
@@ -21,16 +22,14 @@
             td
                 text-align: right
                 white-space: nowrap
-                width: 8em
                 // border: 1px solid gray
 
                 &:first-child
                     text-align: left
+                    width: 30px
                 &:not(:first-child) 
-                    &:not(:last-child)
-                        font-weight: 600
-                &:not(:last-child)
-                    padding-right: 5px
+                    font-weight: 600
+                    width: 100px
             
     .timeSinceLastStatus
         font-size: 12px

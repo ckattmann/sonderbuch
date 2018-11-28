@@ -10,21 +10,18 @@ div.tooltip
         table
             tr.tooltipline.realpower
                 td P
-                td.p1 #{parseFloat(measurement.P1).toFixed(2)}
-                td.p2 #{parseFloat(measurement.P2).toFixed(2)}
-                td.p3 #{parseFloat(measurement.P3).toFixed(2)}
-                td W
+                td.p1 #{measurement.P1}
+                td.p2 #{measurement.P2}
+                td.p3 #{measurement.P3}
             tr.tooltipline.voltages 
                 td U
-                td.u1 #{parseFloat(measurement.U1).toFixed(1)}
-                td.u2 #{parseFloat(measurement.U2).toFixed(1)}
-                td.u3 #{parseFloat(measurement.U3).toFixed(1)}
-                td V
+                td.u1 #{measurement.U1}
+                td.u2 #{measurement.U2}
+                td.u3 #{measurement.U3}
             tr.tooltipline.thd
-                td THD
-                td.thd1 #{parseFloat(measurement.THDU1).toFixed(2)}
-                td.thd2 #{parseFloat(measurement.THDU2).toFixed(2)}
-                td.thd3 #{parseFloat(measurement.THDU3).toFixed(2)}
-                td %
-    div.tooltipline.timeSinceLastStatus
-        span #{timeSinceLastStatusText} ago
+                td I
+                td.i1 #{measurement.I1}
+                td.i2 #{measurement.I2}
+                td.i3 #{measurement.I3}
+        div.tooltipline.timeSinceLastStatus
+            span #{measurement.timeSinceLastStatusText} ago

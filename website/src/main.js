@@ -86,10 +86,15 @@ $(document).ready(function() {
                                     if (tooltipsMarkerInfo.measurements.hasOwnProperty(measurement_key)) {
                                         let measurement = tooltipsMarkerInfo.measurements[measurement_key];
                                         measurement.name = measurement_key;
+                                        for (const key in measurement) {
+                                            if (key[0] == 'P' | key[0] == 'U' | key[0] == 'I'){
+                                                measurement[key] = tools.customValueFormatter(measurement[key],key,2)
+                                            }
+                                        }
                                         
                                         var now = Date.now();
                                         let secondsSinceLastStatus = (now - measurement.time) / 1000;
-                                        tooltipsMarkerInfo.timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
+                                        measurement.timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
                                     }
                                 }
                                 
@@ -296,39 +301,7 @@ $(document).ready(function() {
                                         y : {
                                             //labelsKMB: true,
                                             valueFormatter: function(value, opts, seriesName, dygraph, row, col) {
-                                                let dim;
-                                                let advalue;
-                                                if (value > 1000 || value < -1000) {
-                                                    advalue = value / 1000;
-                                                    dim = 'K';
-                                                } else if (value < 1 && value > -1) {
-                                                    advalue = value * 1000;
-                                                    dim = 'm';
-                                                } else {
-                                                    advalue = value; 
-                                                    dim = ''; 
-                                                }
-                                                if (seriesName == 'U1' || seriesName == 'U2' || seriesName == 'U3') {
-                                                    return advalue.toFixed(3)+ ' ' + dim +'V';
-                                                }
-                                                else if (seriesName == 'THDU1' || seriesName == 'THDU2' || seriesName == 'THDU3') {
-                                                    return value.toFixed(2)+'%';
-                                                }
-                                                else if (seriesName == 'I1' || seriesName == 'I2' || seriesName == 'I3') {
-                                                    return advalue.toFixed(3)+ ' ' + dim +'A';
-                                                }
-                                                else if (seriesName == 'P1' || seriesName == 'P2' || seriesName == 'P3') {
-                                                    return advalue.toFixed(3)+ ' ' + dim +'W';
-                                                }
-                                                else if (seriesName == 'S1' || seriesName == 'S2' || seriesName == 'S3') {
-                                                    return advalue.toFixed(3)+ ' ' + dim +'VA';
-                                                }
-                                                else if (seriesName == 'PF1' || seriesName == 'PF2' || seriesName == 'PF3') {
-                                                    return value.toFixed(3);
-                                                } 
-                                                else if (seriesName == 'f') {
-                                                    return advalue.toFixed(3)+ ' ' + dim +'Hz';
-                                                }
+                                                return tools.customValueFormatter(value,seriesName,3);
                                             },
                                             axisLabelWidth : 85,
                                             axisLabelFormatter: function (value) {
@@ -538,15 +511,18 @@ $(document).ready(function() {
                     } else {                     
                         status.grids[grid].buttonDisabled = true;
                     }
-                    for (let measurement in status.grids[grid].measurements) {
-                        let secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement].time) / 1000;
-                        status.grids[grid].measurements[measurement].timeSinceLastStatus = secondsSinceLastStatus;
-                        status.grids[grid].measurements[measurement].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
+                    for (let measurement_key in status.grids[grid].measurements) {
+                        for (const key in status.grids[grid].measurements[measurement_key]) {
+                            if (key[0] == 'U' | key[0] == 'I'){
+                                status.grids[grid].measurements[measurement_key][key] = tools.customValueFormatter(status.grids[grid].measurements[measurement_key][key],key,3)
+                            }
+                        }
+                        let secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement_key].time) / 1000;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatus = secondsSinceLastStatus;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
                     }
                     index++;
                 }
-                //console.log(status);
-                console.log(res.status);
                       
                 $('#mainarea').append(status_html(status));
 
@@ -611,10 +587,8 @@ $(document).ready(function() {
                                             let loc_el = $('#'+location_id).children();                                          
                                             for (let index = 1; index < loc_el.length; index++) {
                                                 const element = loc_el[index];
-                                                if (element.classList[1].slice(0,-1) == 'U') {
-                                                    element.innerText = measurements[location][element.classList[1]].toFixed(3) + ' V';
-                                                } else if (element.classList[1].slice(0,-1) == 'I') {
-                                                    element.innerText = measurements[location][element.classList[1]].toFixed(3) + ' A';
+                                                if (element.classList[1].slice(0,-1) == 'U' | element.classList[1].slice(0,-1) == 'I') {
+                                                    element.innerText = tools.customValueFormatter(measurements[location][element.classList[1]],element.classList[1],3);
                                                 } else {
                                                     element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
                                                 } 
