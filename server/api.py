@@ -264,7 +264,7 @@ def get_status_flexibilities():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors','Prototypes']]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:
