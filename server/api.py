@@ -149,7 +149,10 @@ def write_to_db():
 
         # Write data to DB
         try:
-            CLIENT.write_points(datapoints, database=database, time_precision='s')
+            if database == "Showcase":
+                CLIENT.write_points(datapoints, database=database, time_precision='ms')
+            else:
+                CLIENT.write_points(datapoints, database=database, time_precision='s')
         except:
             print('Error during writing process')
             print(datapoints)
@@ -264,7 +267,7 @@ def get_status_flexibilities():
 def get_status():
     status = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors','Prototypes']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors','Showcase']]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:
