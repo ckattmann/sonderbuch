@@ -60,8 +60,9 @@
         .chartdiv
             width: 100%
             min-width: 378px
-            height: calc(100% -0px)
-            min-height: 676px
+            height: calc(100% - 320px)
+            @supports (-moz-appearance:none)
+                min-height: 600px
             position: relative
             margin-top: 10px
 
