@@ -140,11 +140,13 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
-    s = BytesIO(request.get_data())
-    g = gzip.GzipFile(mode='rb',fileobj=s))
-    req = json.loads(g.read().decode('utf-8'))
-    g.close()
-    print(req)
+    if request.content_encoding == 'gzip':
+        s = BytesIO(request.get_data())
+        g = gzip.GzipFile(mode='rb',fileobj=s)
+        req = json.loads(g.read().decode('utf-8'))
+        g.close()
+    else:
+        req = request.get_json()
     database = req['grid']
     datapoints = req['datapoints']
     if database != 'Misc':
