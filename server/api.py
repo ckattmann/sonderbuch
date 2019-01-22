@@ -153,9 +153,11 @@ def write_to_db():
                 CLIENT.write_points(datapoints, database=database, time_precision='ms')
             else:
                 CLIENT.write_points(datapoints, database=database, time_precision='s')
-        except:
+        except Exception as e:
             print('Error during writing process')
             print(datapoints)
+            #with open("log.txt","a") as f:
+            #    f.write(str(e)+"\n")
             raise
 
     # Additionally write latest json to file for quick retrieval of status
