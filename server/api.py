@@ -6,6 +6,8 @@ import pytz
 import logging
 from flask import Flask, request, jsonify
 import influxdb
+import gzip
+from io import BytesIO, StringIO, TextIOWrapper
 
 app = Flask(__name__)
 
@@ -138,7 +140,11 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
-    req = request.get_json()
+    s = BytesIO(request.get_data())
+    g = TextIOWrapper(gzip.GzipFile(mode='rb',fileobj=s))
+    req = g.read()
+    g.close()
+    print(req)
     database = req['grid']
     datapoints = req['datapoints']
     if database != 'Misc':
