@@ -9,14 +9,17 @@ import influxdb
 import pandas as pd
 
 
-def tuple2str(tup):
-    newli= []
-    for x in tup:
-        if type(x) != str:
-            newli.append(tuple2str(x))
-        else:
-            newli.append(x)
-    return "_".join(newli)
+def tuple2str(tup):   
+    if type(tup) == str:
+        return tup
+    else:
+        newli= []
+        for x in tup:
+            if type(x) != str:
+                newli.append(tuple2str(x))
+            else:
+                newli.append(x)
+        return "".join(newli)
 
 # Load Database Credentials
 with open('dbcredentials.json', 'r') as f:
@@ -60,6 +63,7 @@ def backup(timeavrg=None):
             
         # DB wechseln und alle "Tabellennamen" ermitteln    
         client.switch_database(db)
+        dfclient.switch_database(db)
         measurementnames = [m['name'] for m in client.get_list_measurements()]
         
         for mes in measurementnames:
@@ -77,13 +81,13 @@ def backup(timeavrg=None):
                     os.makedirs(savedirectory)
                 savedirs.append(savedirectory)
 
-            fields = [x["fieldKey"] for x in client.query("show field keys on {} from {}".format(db,mes)).get_points() if x["fieldType"] in ["float","integer"]][:]
+            fields = [x["fieldKey"] for x in client.query('''show field keys on "{}" from "{}"'''.format(db,mes)).get_points() if x["fieldType"] in ["float","integer"]][:]
             tags = '","'.join([x["tagKey"] for x in client.query("show tag keys").get_points()])    
             if timeavrg != None:
                 fieldnames = ",".join(['mean("{}") as "{}"'.format(i,i) for i in fields])
-                query = '''select {} from {} where time >= {}s and time < {}s group by *,time({})'''.format(fieldnames,mes,int(start_utc),int(end_utc),timeavrg)
+                query = '''select {} from "{}" where time >= {}s and time < {}s group by *,time({})'''.format(fieldnames,mes,int(start_utc),int(end_utc),timeavrg)
             else:
-                query = '''select * from {} where time >= {}s and time < {}s group by *'''.format(mes,int(start_utc),int(end_utc))
+                query = '''select * from "{}" where time >= {}s and time < {}s group by *'''.format(mes,int(start_utc),int(end_utc))
                   
             try:
                 ret=dfclient.query(query,database=db)

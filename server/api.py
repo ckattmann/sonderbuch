@@ -58,7 +58,7 @@ def build_query_string(query_dict):
     # SELECT
     select_string = 'SELECT '
     if isinstance(query_dict['values'], list):
-        selected_string = ','.join(['mean('+v+')' for v in query_dict['values']])
+        selected_string = ','.join(['mean("'+v+'")' for v in query_dict['values']])
     elif isinstance(query_dict['values'], str):
         selected_string = query_dict['values']
     else:
