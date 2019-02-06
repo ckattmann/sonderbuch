@@ -32,11 +32,13 @@ dfclient = influxdb.DataFrameClient(**dbcredentials)
 
 
 def backup(timeavrg=None):
-    backupdir = backupcredentials["backupdir"]
-    if timeavrg != None:
-        backupdir+="/{}_resample".format(timeavrg)
-    else:
-        backupdir+="/no_resample"
+    backupdirs = []
+    for backupdir in backupcredentials["backupdirs"]:
+        if timeavrg != None:
+            backupdir+="/{}_resample".format(timeavrg)
+        else:
+            backupdir+="/no_resample"
+        backupdirs.append(backupdir)
 
     yesterday = datetime.datetime.today().replace(hour=0,minute=0,second=0,microsecond=0)-datetime.timedelta(days=1)
     year = yesterday.year
@@ -47,28 +49,34 @@ def backup(timeavrg=None):
     end_utc = pytz.utc.localize(today).timestamp()
 
 
-    dbnames = [d['name'] for d in client.get_list_database() if d["name"] not in ["_internal"]]
+    dbnames = [d['name'] for d in client.get_list_database() if d["name"] not in ["_internal"]+backupcredentials["ignored_dbs"]]
     for db in dbnames:
+
         # Ordner für jede Datenbank anlegen
-        dbdirectory=os.path.join(backupdir,db)
-        if not os.path.exists(dbdirectory):
-            os.makedirs(dbdirectory) 
+        for backupdir in backupdirs:
+            dbdirectory=os.path.join(backupdir,db)
+            if not os.path.exists(dbdirectory):
+                os.makedirs(dbdirectory) 
             
         # DB wechseln und alle "Tabellennamen" ermitteln    
         client.switch_database(db)
         measurementnames = [m['name'] for m in client.get_list_measurements()]
         
         for mes in measurementnames:
+            savedirs = []
             # Unterordner für jede Tabelle anlegen
-            mesdirectory=os.path.join(dbdirectory,mes)
-            if not os.path.exists(mesdirectory):
-                os.makedirs(mesdirectory)
+            for backupdir in backupdirs:
+                dbdirectory=os.path.join(backupdir,db)
+                mesdirectory=os.path.join(dbdirectory,mes)
+                if not os.path.exists(mesdirectory):
+                    os.makedirs(mesdirectory)
                 
-            # Unterordner für Jahre/Monate anlegen
-            savedirectory=os.path.join(mesdirectory,"{}/{}".format(year,month))
-            if not os.path.exists(savedirectory):
-                os.makedirs(savedirectory)
-            
+                # Unterordner für Jahre/Monate anlegen
+                savedirectory=os.path.join(mesdirectory,"{}/{}".format(year,month))
+                if not os.path.exists(savedirectory):
+                    os.makedirs(savedirectory)
+                savedirs.append(savedirectory)
+
             fields = [x["fieldKey"] for x in client.query("show field keys on {} from {}".format(db,mes)).get_points() if x["fieldType"] in ["float","integer"]][:]
             tags = '","'.join([x["tagKey"] for x in client.query("show tag keys").get_points()])    
             if timeavrg != None:
@@ -81,12 +89,14 @@ def backup(timeavrg=None):
                 ret=dfclient.query(query,database=db)
                 for x in ret:
                     df=pd.DataFrame(ret[x])
-                    filepath = os.path.join(savedirectory,"{}-{}-{}--{}.csv".format(year,month,day,tuple2str(x)))
-                    df.to_csv(filepath, sep=";", decimal=",")
+                    for savedirectory in savedirs:
+                        filepath = os.path.join(savedirectory,"{}-{}-{}--{}.csv".format(year,month,day,tuple2str(x)))
+                        df.to_csv(filepath, sep=";", decimal=",")
             except Exception as e:
                 print(query)
                 print(str(e))
 
+            
 backup()
 for avrg in backuptimeaverages:
     backup(avrg)
