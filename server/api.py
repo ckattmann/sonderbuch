@@ -111,6 +111,7 @@ def querydb():
             print(str(e))
             print('Query result: ',query_result)
             print('Query result raw: ',query_result.raw)
+            return jsonify(vars(query_result))
             data = []
         return jsonify({'data':data})  
     else:
@@ -174,7 +175,7 @@ def write_to_db():
             connection_data = []
             for datapoint in req['datapoints']:
                 dataTime = datapoint["time"]
-                dataDB = datapoint["grid"]
+                dataDB = req["grid"]
                 dataMes = datapoint["measurement"]
                 timedelta = now - dataTime
                 dat = {
@@ -185,12 +186,12 @@ def write_to_db():
                         'storetime':int(now*1000), # timestamp of storage in DB in ms
                         'timedelta':timedelta # timedelta between measurement and storage in DB
                     },
-                    'tags': {'interface':iface,'db':dataDB,'measurement':dataMes}
+                    'tags': {'interface':iface,'db':dataDB,'mes':dataMes}
                 }
                 connection_data.append(dat) 
             CLIENT.write_points(connection_data, database=DBname, time_precision='ms')
     except Exception as e:
-        logging.debug(str(e))
+        print(str(e))
 
 
     database = req['grid']
