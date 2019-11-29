@@ -9,6 +9,17 @@ import influxdb
 import gzip
 from io import BytesIO, StringIO, TextIOWrapper
 
+DB_status_exceptions = [
+    '_internal',
+    'Sonderbuch',
+    'Sonderbuch_20180628',
+    'Flexibilities',
+    'Sensors',
+    'Showcase',
+    'StateEstimation',
+    'SE',
+]
+
 app = Flask(__name__)
 
 # Load Database Credentials
@@ -80,7 +91,6 @@ def build_query_string(query_dict):
 @app.route('/api/query', methods=['POST'])
 def querydb():
     query_dict = request.get_json()
-    print(query_dict)
     # Preprocess the request
     query_string = query_dict.get('querystring',None)
     if query_string:
@@ -97,7 +107,8 @@ def querydb():
         # Parse Result:
         try:
             data = query_result.raw['series']
-        except:
+        except Exception as e:
+            print(str(e))
             print('Query result: ',query_result)
             print('Query result raw: ',query_result.raw)
             data = []
@@ -140,6 +151,10 @@ def querydb():
 
 @app.route('/api/write', methods=['POST'])
 def write_to_db():
+    # Get current time for comparison with time of measurement
+    # Difference == time of communication process
+    now = time.time()
+
     if request.content_encoding == 'gzip':
         s = BytesIO(request.get_data())
         g = gzip.GzipFile(mode='rb',fileobj=s)
@@ -147,8 +162,40 @@ def write_to_db():
         g.close()
     else:
         req = request.get_json()
+    
+    try:
+        # ETH or GSM
+        iface = req.get('interface',False)
+        if iface:
+            DBname = 'Sonderbuch'
+            if DBname not in [d['name'] for d in CLIENT.get_list_database()]:
+                CLIENT.create_database(DBname)
+
+            connection_data = []
+            for datapoint in req['datapoints']:
+                dataTime = datapoint["time"]
+                dataDB = datapoint["grid"]
+                dataMes = datapoint["measurement"]
+                timedelta = now - dataTime
+                dat = {
+                    'grid': DBname,
+                    'measurement': 'Communications',
+                    'time': int(dataTime*1000),
+                    'fields': {
+                        'storetime':int(now*1000), # timestamp of storage in DB in ms
+                        'timedelta':timedelta # timedelta between measurement and storage in DB
+                    },
+                    'tags': {'interface':iface,'db':dataDB,'measurement':dataMes}
+                }
+                connection_data.append(dat) 
+            CLIENT.write_points(connection_data, database=DBname, time_precision='ms')
+    except Exception as e:
+        logging.debug(str(e))
+
+
     database = req['grid']
     datapoints = req['datapoints']
+    
     if database != 'Misc':
         if database not in [d['name'] for d in CLIENT.get_list_database()]:
             # logging.debug(str(database)+' not in DB, attempting to create it')
@@ -179,11 +226,12 @@ def write_sensor_data_to_db():
     database = "Sensors"
     # get the request data as json
     rdata = request.get_json(force=True)
+    #with open("keys.txt","a") as f:
+        #f.write("\n")
+        #f.write("Received /api/sensors request: {}".format(str(rdata)))
     datapoints=[]
     fields={}
     for key,item in rdata.items():
-        #with open("keys.txt","a") as f:
-        #    f.write(str(key)+": "+str(item)+" "+str(type(item))+"\n")
         if key == "devaddr":
             devaddr=str(item)
         elif key == "data":
@@ -193,6 +241,7 @@ def write_sensor_data_to_db():
             ger_tz = pytz.timezone('Europe/Berlin')
             # datetime is str of form: 2018-11-16T08:25:59Z
             dtime = utc_tz.normalize(utc_tz.localize(datetime.datetime.strptime(item,"%Y-%m-%dT%H:%M:%SZ"), is_dst=False))
+            fields[key]=str(item)
         elif "field" in key:
             if key[-1]=="1":
                 fields["temperature"]=item
@@ -207,7 +256,7 @@ def write_sensor_data_to_db():
     datapoint = {
         'grid': database,
         'measurement': devaddr,
-        'time': dtime,
+        'time': int(dtime.timestamp()),
         'fields': {str(key):item for key,item in fields.items()},
         'tags': {}
     }
@@ -218,9 +267,13 @@ def write_sensor_data_to_db():
     # Write data to DB
     try:
         CLIENT.write_points(datapoints, database=database, time_precision='s')
-    except:
-        print('Error during writing process')
-        print(datapoints)
+    except Exception as e:
+        #with open("keys.txt","a") as f:
+        #    f.write("\n")
+        #    f.write('Error during writing process')
+        #    f.write(str(e))
+        print('\nError during writing process')
+        print(str(e))
         raise
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
@@ -276,8 +329,14 @@ def get_status_flexibilities():
 @app.route('/api/status', methods=['GET'])
 def get_status():
     status = {}
+    ## Load all existing coordinates
+    #try:
+    #    with open('coordinates.json', 'r') as f:
+    #        coordinates = json.loads(f.read())
+    #except:
+    #    coordinates = {}
 
-    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in ['_internal','Sonderbuch_20180628','Flexibilities','Sensors','Showcase']]
+    available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in DB_status_exceptions]
     status['grids'] = {}
     t0 = time.time()
     for db in available_databases:
@@ -295,6 +354,7 @@ def get_status():
         for location in [d['name'] for d in CLIENT.get_list_measurements()]:
             try:
                 t3 = time.time()
+                fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
                 result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
                 t4 = time.time()
                 status['get_last_values_for_' + location] = t4 - t3
@@ -312,8 +372,36 @@ def get_status():
     status['total_time_databases'] = time.time() - t0
     return jsonify({'status':status})
 
+@app.route('/api/state', methods=['GET'])
+def get_state():
+    status = {}
+    available_databases = ['StateEstimation']
+    status['grids'] = {}
+    for db in available_databases:
+        CLIENT.switch_database(db)
+        status['grids'][db] = {}
+        status['grids'][db]['measurements'] = {}
+        for location in [d['name'] for d in CLIENT.get_list_measurements()]:
+            try:
+                fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
+                result = CLIENT.query('SELECT LAST({}), * FROM "{}"'.format(fields[0],location), epoch='ms')           
+                result = list(result.get_points())[0]
+                result.pop('last')
+                status['grids'][db]['measurements'][location] = result
+            except:
+                pass
+    return jsonify({'status':status})
+    #return json.dumps({'status':status},ensure_ascii=False)    
+
 @app.route('/api/update', methods=['POST'])
 def set_status():
+    # Load all existing coordinates
+    try:
+        with open('coordinates.json', 'r') as f:
+            coordinates = json.loads(f.read())
+    except:
+        coordinates = {}
+
     req = request.get_json()
     coordinates[req['db']] = {}
     coordinates[req['db']]['lat'] = req['lat']
