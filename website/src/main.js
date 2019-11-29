@@ -152,10 +152,10 @@ $(document).ready(function() {
                 'Frequency': {id: 'freq', values: 'f'}
             },
             timeIntervals: {
-                'All Time': {id: 'alltime', values: 'alltime'},
                 'Today': {id: 'today', values: 'today'},
+                'Last 24h': {id: 'last24h', values: 'last24h'},
                 'This week': {id: 'thisweek', values: 'thisweek'},
-                'Last 24h': {id: 'last24h', values: 'last24h'}
+                'All Time': {id: 'alltime', values: 'alltime'}
             }
         };
         $('#mainarea').append(chartcardhtml(data));
