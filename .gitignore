@@ -6,9 +6,11 @@ website/node_modules
 *.swo
 *.pyc
 *.log
-
 *.json
+*.sock
 server/dbcredentials.json
+
 !website/package.json
+!server/backupcredentials.json
 
 .vscode
