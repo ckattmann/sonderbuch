@@ -9,6 +9,9 @@ import influxdb
 import gzip
 from io import BytesIO, StringIO, TextIOWrapper
 
+
+this_directory = os.path.dirname(os.path.realpath(__file__))
+status_directory = os.path.join(this_directory,"status")
 DB_status_exceptions = [
     '_internal',
     'Sonderbuch',
@@ -217,8 +220,27 @@ def write_to_db():
             raise
 
     # Additionally write latest json to file for quick retrieval of status
-    # address = data['tags']['address']
-    # with open()
+    if not os.path.exists(status_directory):
+        os.makedirs(status_directory)
+
+    if database not in DB_status_exceptions:
+        latest_datapoint = sorted(datapoints, key=lambda k: k['time'])[-1]
+        mes = str(latest_datapoint['measurement'])
+        fields = latest_datapoint['fields']
+        fields.update({'time':int(latest_datapoint['time']*1000)})
+
+        thisfilename = os.path.join(status_directory,f'{database}.json')
+        if os.path.isfile(thisfilename):
+            with open(thisfilename,'r') as file:
+                last_db_status = json.load(file)
+                db_status = last_db_status
+        else:    
+            db_status = {}
+            db_status['measurements'] = {}
+
+        db_status['measurements'][mes] = fields
+        with open(thisfilename,'w') as file:
+            json.dump(db_status,file)
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
@@ -340,37 +362,61 @@ def get_status():
     available_databases = [d['name'] for d in list(CLIENT.get_list_database()) if d['name'] not in DB_status_exceptions]
     status['grids'] = {}
     t0 = time.time()
+    status['toal_time_for_db_querys'] = 0
+    status['total_time_for_json_loads'] = 0
+    number_of_json_loads = 0
+    number_of_db_querys = 0
     for db in available_databases:
         t1 = time.time()
-        CLIENT.switch_database(db)
-        #status['time_for_switching'] = time.time() - t1
-        t2 = time.time()
-        status['grids'][db] = {}
-        if db in coordinates.keys():
-            status['grids'][db]['coordinates'] = coordinates[db]
+        thisfilename = os.path.join(status_directory,f'{db}.json')
+        if os.path.isfile(thisfilename):
+            with open(thisfilename,'r') as file:
+                last_db_status = json.load(file)
+                status['grids'][db] = last_db_status
+            if db in coordinates.keys():
+                status['grids'][db]['coordinates'] = coordinates[db]
+            else:
+                status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
+            loadingtime = time.time() - t1
+            status[f'time_for_loading_jsonfile_for_{db}'] = loadingtime
+            status['total_time_for_json_loads'] += loadingtime
+            number_of_json_loads += 1
         else:
-            status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
-        status['grids'][db]['measurements'] = {}
-        #status['time_for_coordinates'] = time.time() - t2
-        for location in [d['name'] for d in CLIENT.get_list_measurements()]:
-            try:
-                t3 = time.time()
-                fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
-                result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
-                t4 = time.time()
-                status['get_last_values_for_' + location] = t4 - t3
-                result = list(result.get_points())[0]
-                t5 = time.time()
-                #status['sort_result_for_' + location] = t5 - t4
-                result['U1'] = result.pop('last')
-                t6 = time.time()
-                #status['select_last_from_dict_for_' + location] = t6 - t5
-                status['grids'][db]['measurements'][location] = result
-                #status['putting_in_dict_for_' + location] = time.time() - t6
-            except:
-                pass
-        #status['total_time_measurements'] = time.time() - t1
+            t11 = time.time()
+            CLIENT.switch_database(db)
+            #status[f'time_for_switching_for_{db}'] = time.time() - t1
+            t2 = time.time()
+            status['grids'][db] = {}
+            if db in coordinates.keys():
+                status['grids'][db]['coordinates'] = coordinates[db]
+            else:
+                status['grids'][db]['coordinates'] = {'lat':None,'lng':None}
+            status['grids'][db]['measurements'] = {}
+            #status[f'time_for_coordinates_{db}'] = time.time() - t2
+            for location in [d['name'] for d in CLIENT.get_list_measurements()]:
+                try:
+                    t3 = time.time()
+                    fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
+                    result = CLIENT.query('SELECT LAST(U1), * from "'+location+'"', epoch='ms')
+                    t4 = time.time()
+                    #status['get_last_values_for_' + location] = t4 - t3
+                    result = list(result.get_points())[0]
+                    t5 = time.time()
+                    #status['sort_result_for_' + location] = t5 - t4
+                    result['U1'] = result.pop('last')
+                    t6 = time.time()
+                    #status['select_last_from_dict_for_' + location] = t6 - t5
+                    status['grids'][db]['measurements'][location] = result
+                    #status['putting_in_dict_for_' + location] = time.time() - t6
+                except:
+                    pass
+            loadingtime = time.time() - t11        
+            status['toal_time_for_db_querys'] += loadingtime
+            number_of_db_querys+= 1
+        status[f'total_time_for_{db}'] = time.time() - t1
     status['total_time_databases'] = time.time() - t0
+    status['average_time_for_db_querys'] = status['toal_time_for_db_querys'] / number_of_db_querys
+    status['average_time_for_json_loads'] = status['total_time_for_json_loads'] / number_of_json_loads
     return jsonify({'status':status})
 
 @app.route('/api/state', methods=['GET'])
