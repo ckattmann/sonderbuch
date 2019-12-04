@@ -224,23 +224,53 @@ def write_to_db():
         os.makedirs(status_directory)
 
     if database not in DB_status_exceptions:
-        latest_datapoint = sorted(datapoints, key=lambda k: k['time'])[-1]
-        mes = str(latest_datapoint['measurement'])
-        fields = latest_datapoint['fields']
-        fields.update({'time':int(latest_datapoint['time']*1000)})
+        # find the latest datapoints from the list of received datapoints 
+        # 2 different measurements are possible in the received datapoints
+        
+        # sortieren nach time und neusten auswählen
+        latest_datapoint_1 = sorted(datapoints, key=lambda k: k['time'])[-1]
+        mes_1 = str(latest_datapoint_1['measurement'])
+        latest_datapoints = [latest_datapoint_1]
 
+        # subset von allen datapoints erstellen die nicht vom selben measurement sind
+        # subset sortieren und neustes element auswählen
+        subset = [dp for dp in datapoints if dp["measurement"] != mes_1]
+        sorted_subset = sorted(subset, key=lambda k: k['time'])
+        if len(sorted_subset) > 0:
+            latest_datapoints.append(sorted_subset[-1])
+
+        # bisheriges status file einlesen
         thisfilename = os.path.join(status_directory,f'{database}.json')
         if os.path.isfile(thisfilename):
             with open(thisfilename,'r') as file:
-                last_db_status = json.load(file)
-                db_status = last_db_status
+                db_status = json.load(file)
         else:    
             db_status = {}
             db_status['measurements'] = {}
 
-        db_status['measurements'][mes] = fields
+        for latest_datapoint in latest_datapoints:
+            mes = str(latest_datapoint['measurement'])
+            fields = latest_datapoint['fields']
+            fields.update({'time':int(latest_datapoint['time']*1000)})
+            db_status['measurements'][mes] = fields
+
         with open(thisfilename,'w') as file:
             json.dump(db_status,file)
+    elif database == "StateEstimation":
+        statefilename = os.path.join(status_directory,'state_sonderbuch.json')
+        #if os.path.isfile(statefilename):
+        #    with open(statefilename,'r') as file:
+        #        last_state = json.load(file)
+        state = {}
+        for datapoint in datapoints:
+            thesefields = datapoint["fields"]
+            thesefields.update({'time':int(datapoint['time']*1000)})
+            state[datapoint["measurement"]] = thesefields
+
+        with open(statefilename,'w') as file:
+            json.dump(state,file)
+
+
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
@@ -423,20 +453,37 @@ def get_status():
 def get_state():
     status = {}
     available_databases = ['StateEstimation']
+    status['times']={}
     status['grids'] = {}
+    t0=time.time()
     for db in available_databases:
-        CLIENT.switch_database(db)
-        status['grids'][db] = {}
-        status['grids'][db]['measurements'] = {}
-        for location in [d['name'] for d in CLIENT.get_list_measurements()]:
-            try:
-                fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
-                result = CLIENT.query('SELECT LAST({}), * FROM "{}"'.format(fields[0],location), epoch='ms')           
-                result = list(result.get_points())[0]
-                result.pop('last')
-                status['grids'][db]['measurements'][location] = result
-            except:
-                pass
+        if db == 'StateEstimation':
+            status['grids'][db] = {}
+            thisfilename = os.path.join(status_directory,'state_sonderbuch.json')
+            if os.path.isfile(thisfilename):
+                with open(thisfilename,'r') as file:
+                    state = json.load(file)
+                status['grids'][db]['measurements'] = state
+                status['times']['loading_state_file']=time.time()-t0
+            
+        else:
+            CLIENT.switch_database(db)
+            status['grids'][db] = {}
+            status['grids'][db]['measurements'] = {}
+            for location in [d['name'] for d in CLIENT.get_list_measurements()]:
+                try:
+                    t1 = time.time()
+                    fields = [x["fieldKey"] for x in CLIENT.query('''show field keys on "{}" from "{}"'''.format(db,location)).get_points() if x["fieldType"] in ["float","integer"]][:]
+                    result = CLIENT.query('SELECT LAST({}), * FROM "{}"'.format(fields[0],location), epoch='ms')           
+                    result = list(result.get_points())[0]
+                    result.pop('last')
+                    status['grids'][db]['measurements'][location] = result
+                except:
+                    pass
+                status['times'][f'query_mes_{location}']=time.time()-t1
+            
+
+    status['times']['whole_request']=time.time()-t0
     return jsonify({'status':status})
     #return json.dumps({'status':status},ensure_ascii=False)    
 
