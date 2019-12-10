@@ -240,14 +240,20 @@ def write_to_db():
             latest_datapoints.append(sorted_subset[-1])
 
         # bisheriges status file einlesen
+        
         thisfilename = os.path.join(status_directory,f'{database}.json')
         if os.path.isfile(thisfilename):
-            with open(thisfilename,'r') as file:
-                db_status = json.load(file)
+            try:
+                with open(thisfilename,'r') as file:
+                    db_status = json.load(file)
+            except Exception as e:
+                os.remove(f'{database}.json')
+                db_status = {}
+                db_status['measurements'] = {}
         else:    
             db_status = {}
             db_status['measurements'] = {}
-
+        
         for latest_datapoint in latest_datapoints:
             mes = str(latest_datapoint['measurement'])
             fields = latest_datapoint['fields']
