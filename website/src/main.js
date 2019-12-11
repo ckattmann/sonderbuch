@@ -146,6 +146,7 @@ $(document).ready(function() {
                 'Voltage': {id: 'voltage', values: 'U1,U2,U3'},
                 'THD': {id: 'thd', values: 'THDU1,THDU2,THDU3'},
                 'Real Power': {id: 'P', values: 'P1,P2,P3'},
+                'Reactive Power': {id: 'P', values: 'Q1,Q2,Q3'},
                 'Current': {id: 'current', values: 'I1,I2,I3'},
                 'Power Factor': {id: 'PF', values: 'PF1,PF2,PF3'},
                 'Apparent Power': {id: 'S', values: 'S1,S2,S3'},
