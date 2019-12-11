@@ -4,6 +4,7 @@ import time
 import datetime
 import pytz 
 import logging
+import copy
 from flask import Flask, request, jsonify
 import influxdb
 import gzip
@@ -25,10 +26,65 @@ DB_status_exceptions = [
 
 app = Flask(__name__)
 
+
 # Load Database Credentials
 with open('dbcredentials.json', 'r') as f:
     credentials = json.loads(f.read())
 CLIENT = influxdb.InfluxDBClient(**credentials)
+
+
+###########################
+# Create Continuous Queries
+###########################
+cqs = []
+
+# 002 
+# 002-1 ist PV --> 002-2 _pv
+# 002-0 ist Residuallast (Landw. + PV) --> 002-2 _residual
+cq_name = "cq_residual_002"
+database = "002001002"
+cq = '''CREATE CONTINUOUS QUERY "{}" ON "{}" RESAMPLE FOR 1m BEGIN
+SELECT mean("P1_residual") - mean("P1_pv") AS "P1", 
+mean("P2_residual") - mean("P2_pv") AS "P2", 
+mean("P3_residual") - mean("P3_pv") AS "P3", 
+mean("Q1_residual") - mean("Q1_pv") AS "Q1", 
+mean("Q2_residual") - mean("Q2_pv") AS "Q2", 
+mean("Q3_residual") - mean("Q3_pv") AS "Q3", 
+mean("S1_residual") - mean("S1_pv") AS "S1", 
+mean("S2_residual") - mean("S2_pv") AS "S2", 
+mean("S3_residual") - mean("S3_pv") AS "S3" 
+INTO "002001002".."002001002-2" FROM "002001002-2" GROUP BY time(1s)
+END'''.format(cq_name,database)
+cqs.append({'name':cq_name,'db': database,'query':cq})
+
+# 016 
+# 004-0 ist PV --> 016-2 _pv
+# 016-0 ist Residuallast (Landw. + PV) --> 016-2 _residual
+cq_name = "cq_residual_016"
+database = "002001016"
+cq = '''CREATE CONTINUOUS QUERY "{}" ON "{}" RESAMPLE FOR 1m BEGIN
+SELECT mean("P1_residual") - mean("P1_pv") AS "P1", 
+mean("P2_residual") - mean("P2_pv") AS "P2", 
+mean("P3_residual") - mean("P3_pv") AS "P3", 
+mean("Q1_residual") - mean("Q1_pv") AS "Q1", 
+mean("Q2_residual") - mean("Q2_pv") AS "Q2", 
+mean("Q3_residual") - mean("Q3_pv") AS "Q3", 
+mean("S1_residual") - mean("S1_pv") AS "S1", 
+mean("S2_residual") - mean("S2_pv") AS "S2", 
+mean("S3_residual") - mean("S3_pv") AS "S3" 
+INTO "002001016".."002001016-2" FROM "002001016-2" GROUP BY time(1s)
+END'''.format(cq_name,database)
+cqs.append({'name':cq_name,'db': database,'query':cq})
+
+for thiscq in cqs:
+    try:
+        #CLIENT.switch_database(thiscq["db"])
+        CLIENT.query(thiscq["query"],database=thiscq["db"])
+    # wenn CQ bereits existiert
+    except influxdb.client.InfluxDBClientError as e:
+        # löschen und neu erzeugen (kann nicht abgeändert werden)
+        CLIENT.query('DROP CONTINUOUS QUERY "{}" ON "{}"'.format(thiscq["name"],thiscq["db"]))
+        CLIENT.query(thiscq["query"],database=thiscq["db"])
 
 # Load all existing coordinates
 try:
@@ -199,7 +255,8 @@ def write_to_db():
 
     database = req['grid']
     datapoints = req['datapoints']
-    
+    newdatapoints=[]
+
     if database != 'Misc':
         if database not in [d['name'] for d in CLIENT.get_list_database()]:
             # logging.debug(str(database)+' not in DB, attempting to create it')
@@ -212,6 +269,43 @@ def write_to_db():
                 CLIENT.write_points(datapoints, database=database, time_precision='ms')
             else:
                 CLIENT.write_points(datapoints, database=database, time_precision='s')
+            
+            # Differenzen aus mehreren Messungen bilden und in neuen measurements abspeichern
+            # (alles Ausnahmen)
+             
+            if database in ["002001016","002001004"]:      
+                for dp in datapoints:
+                    measurement = dp["measurement"]
+                    if measurement == "002001016-0":
+                        newdp = copy.deepcopy(dp)
+                        newdp["grid"] = "002001016"
+                        newdp["measurement"]="002001016-2"
+                        newdp['fields'] = {str(key)+'_residual':value for key,value in newdp['fields'].items()}
+                        newdatapoints.append(newdp)
+                    elif measurement == "002001004-0":
+                        newdp = copy.deepcopy(dp)
+                        newdp["grid"] = "002001016"
+                        newdp["measurement"]="002001016-2"
+                        newdp['fields'] = {str(key)+'_pv':value for key,value in newdp['fields'].items()}
+                        newdatapoints.append(newdp)
+                CLIENT.write_points(newdatapoints, database="002001016", time_precision='s')
+            elif database == "002001002":
+                for dp in datapoints:
+                    measurement = dp["measurement"]
+                    if measurement == "002001002-0":
+                            newdp = copy.deepcopy(dp)
+                            newdp["grid"] = "002001002"
+                            newdp["measurement"]="002001002-2"
+                            newdp['fields'] = {str(key)+'_residual':value for key,value in newdp['fields'].items()}
+                            newdatapoints.append(newdp)
+                    elif measurement == "002001002-1":
+                            newdp = copy.deepcopy(dp)
+                            newdp["grid"] = "002001002"
+                            newdp["measurement"]="002001002-2"
+                            newdp['fields'] = {str(key)+'_pv':value for key,value in newdp['fields'].items()}
+                            newdatapoints.append(newdp)
+                CLIENT.write_points(newdatapoints, database="002001002", time_precision='s')
+ 
         except Exception as e:
             print('Error during writing process')
             print(datapoints)
@@ -247,7 +341,7 @@ def write_to_db():
                 with open(thisfilename,'r') as file:
                     db_status = json.load(file)
             except Exception as e:
-                os.remove(f'{database}.json')
+                os.remove(thisfilename)
                 db_status = {}
                 db_status['measurements'] = {}
         else:    
@@ -275,6 +369,31 @@ def write_to_db():
 
         with open(statefilename,'w') as file:
             json.dump(state,file)
+
+    if len(newdatapoints) != 0:
+        # sortieren nach time und neusten auswählen
+        latest_datapoint = sorted(newdatapoints, key=lambda k: k['time'])[-1]
+        database = latest_datapoint['grid']
+        thisfilename = os.path.join(status_directory,f'{database}.json')
+        if os.path.isfile(thisfilename):
+            try:
+                with open(thisfilename,'r') as file:
+                    db_status = json.load(file)
+            except Exception as e:
+                os.remove(f'{database}.json')
+                db_status = {}
+                db_status['measurements'] = {}
+        else:    
+            db_status = {}
+            db_status['measurements'] = {}
+
+        mes = str(latest_datapoint['measurement'])
+        fields = latest_datapoint['fields']
+        fields.update({'time':int(latest_datapoint['time']*1000)})
+        db_status['measurements'][mes] = fields
+        with open(thisfilename,'w') as file:
+            json.dump(db_status,file)
+
 
 
 
@@ -405,6 +524,7 @@ def get_status():
     for db in available_databases:
         t1 = time.time()
         thisfilename = os.path.join(status_directory,f'{db}.json')
+        
         if os.path.isfile(thisfilename):
             with open(thisfilename,'r') as file:
                 last_db_status = json.load(file)
