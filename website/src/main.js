@@ -521,6 +521,14 @@ $(document).ready(function() {
                         let secondsSinceLastStatus = (now - status.grids[grid].measurements[measurement_key].time) / 1000;
                         status.grids[grid].measurements[measurement_key].timeSinceLastStatus = secondsSinceLastStatus;
                         status.grids[grid].measurements[measurement_key].timeSinceLastStatusText = tools.parseTimeDelta(secondsSinceLastStatus);
+                        // GSM
+                        let secondsSinceLastStatusGSM = (now - status.grids[grid].measurements[measurement_key].last_seen_gsm) / 1000;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatusLTE = secondsSinceLastStatusGSM;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatusLTEText = tools.parseTimeDelta(secondsSinceLastStatusGSM);
+                        // ETHERNET
+                        let secondsSinceLastStatusETH= (now - status.grids[grid].measurements[measurement_key].last_seen_ethernet) / 1000;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatusETH = secondsSinceLastStatusETH;
+                        status.grids[grid].measurements[measurement_key].timeSinceLastStatusETHText = tools.parseTimeDelta(secondsSinceLastStatusETH);
                     }
                     index++;
                 }
@@ -590,7 +598,11 @@ $(document).ready(function() {
                                                 const element = loc_el[index];
                                                 if (element.classList[1].slice(0,-1) == 'U' | element.classList[1].slice(0,-1) == 'I') {
                                                     element.innerText = tools.customValueFormatter(measurements[location][element.classList[1]],element.classList[1],3);
-                                                } else {
+                                                } else if (element.classList[1] == 'StatusLTE') {
+                                                    element.innerText = tools.parseTimeDelta((now - measurements[location].last_seen_gsm) / 1000) + ' ago';
+                                                } else if (element.classList[1] == 'StatusETH') {
+                                                    element.innerText = tools.parseTimeDelta((now - measurements[location].last_seen_ethernet) / 1000) + ' ago';
+                                                } else if (element.classList[1] == 'LastStatus') {
                                                     element.innerText = tools.parseTimeDelta((now - measurements[location].time) / 1000) + ' ago';
                                                 } 
                                             }

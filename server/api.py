@@ -21,7 +21,10 @@ DB_status_exceptions = [
     'Sensors',
     'Showcase',
     'StateEstimation',
+    'StatePrediction',
     'SE',
+    'pvs',
+    'Feldtest_Sonderbuch'
 ]
 
 app = Flask(__name__)
@@ -121,6 +124,11 @@ def parse_timeInterval(timeInterval, database, measurement, firstqueryvalue):
         parsed_timeInterval = timeInterval
     return parsed_timeInterval
 
+def tag_filter(tags):
+    wheretags = ""
+    for key,tag in tags.items():
+        wheretags += f''' AND "{key}"='{tag}' '''
+    return wheretags
 
 def build_query_string(query_dict):
     ''' Build an IndexQL query string from the given dictionary '''
@@ -139,6 +147,8 @@ def build_query_string(query_dict):
     from_string = 'FROM "' + query_dict['location_id'] + '"'  # Extra double quotes for location_ids that are numbers
     # WHERE
     where_string = 'WHERE ' + parse_timeInterval(query_dict['timeInterval'], query_dict['grid'], query_dict['location_id'],query_dict['values'][0])
+    tags = query_dict.get("tags",{})
+    where_string += tag_filter(tags)
     # GROUPBY
     groupby_string = 'GROUP BY time('+query_dict['avrgInterval']+')'
 
@@ -157,19 +167,19 @@ def querydb():
             query_starttime = time.time()
             CLIENT.switch_database(query_dict['grid'])
             query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
-            print('Query Time', time.time() - query_starttime)
+            #print('Query Time', time.time() - query_starttime)
         except influxdb.exceptions.InfluxDBClientError:
-            print('Error with query string ', end='')
-            print(query_string)
+            #print('Error with query string ', end='')
+            #print(query_string)
             raise
 
         # Parse Result:
         try:
             data = query_result.raw['series']
         except Exception as e:
-            print(str(e))
-            print('Query result: ',query_result)
-            print('Query result raw: ',query_result.raw)
+            #print(str(e))
+            #print('Query result: ',query_result)
+            #print('Query result raw: ',query_result.raw)
             return jsonify(vars(query_result))
             data = []
         return jsonify({'data':data})  
@@ -189,18 +199,18 @@ def querydb():
             query_starttime = time.time()
             CLIENT.switch_database(query_dict['grid'])
             query_result = CLIENT.query(query_string, epoch='ms')  # ms plays nicely with Dygraphs
-            print('Query Time', time.time() - query_starttime)
+            #print('Query Time', time.time() - query_starttime)
         except influxdb.exceptions.InfluxDBClientError:
-            print('Error with query string ', end='')
-            print(query_string)
+            #print('Error with query string ', end='')
+            #print(query_string)
             raise
 
         # Parse Result:
         try:
             data = query_result.raw['series'][0]['values']
         except:
-            print('Query result: ',query_result)
-            print('Query result raw: ',query_result.raw)
+            #print('Query result: ',query_result)
+            #print('Query result raw: ',query_result.raw)
             data = []
 
         labels = ['time']
@@ -252,23 +262,31 @@ def write_to_db():
     except Exception as e:
         print(str(e))
 
-
+    
     database = req['grid']
-    datapoints = req['datapoints']
+    if database == "Showcase":
+        time_precision='ms'
+        ff = 1000
+    else:
+        time_precision='s'
+        ff = 1
+    
     newdatapoints=[]
-
     if database != 'Misc':
+        datapoints = []
+        for dp in req['datapoints']:
+            # nut Zeitpunkte neuer als 2017
+            if not int(dp["time"]) < 1480464000*ff:
+                datapoints.append(dp)
+
         if database not in [d['name'] for d in CLIENT.get_list_database()]:
             # logging.debug(str(database)+' not in DB, attempting to create it')
             CLIENT.create_database(database)
             # logging.debug('Databases in DB: '+[d['name'] for d in CLIENT.get_list_database()])
 
         # Write data to DB
-        try:
-            if database == "Showcase":
-                CLIENT.write_points(datapoints, database=database, time_precision='ms')
-            else:
-                CLIENT.write_points(datapoints, database=database, time_precision='s')
+        try:            
+            CLIENT.write_points(datapoints, database=database, time_precision=time_precision)
             
             # Differenzen aus mehreren Messungen bilden und in neuen measurements abspeichern
             # (alles Ausnahmen)
@@ -307,8 +325,8 @@ def write_to_db():
                 CLIENT.write_points(newdatapoints, database="002001002", time_precision='s')
  
         except Exception as e:
-            print('Error during writing process')
-            print(datapoints)
+            #print('Error during writing process')
+            #print(datapoints)
             #with open("log.txt","a") as f:
             #    f.write(str(e)+"\n")
             raise
@@ -334,7 +352,6 @@ def write_to_db():
             latest_datapoints.append(sorted_subset[-1])
 
         # bisheriges status file einlesen
-        
         thisfilename = os.path.join(status_directory,f'{database}.json')
         if os.path.isfile(thisfilename):
             try:
@@ -352,7 +369,11 @@ def write_to_db():
             mes = str(latest_datapoint['measurement'])
             fields = latest_datapoint['fields']
             fields.update({'time':int(latest_datapoint['time']*1000)})
-            db_status['measurements'][mes] = fields
+            if iface:
+                fields.update({'last_seen_{}'.format(iface):int(latest_datapoint['time']*1000)})
+            if mes not in db_status['measurements'].keys():
+                db_status['measurements'][mes] = {}
+            db_status['measurements'][mes].update(fields)
 
         with open(thisfilename,'w') as file:
             json.dump(db_status,file)
@@ -373,6 +394,7 @@ def write_to_db():
     if len(newdatapoints) != 0:
         # sortieren nach time und neusten auswählen
         latest_datapoint = sorted(newdatapoints, key=lambda k: k['time'])[-1]
+        mes = str(latest_datapoint['measurement'])
         database = latest_datapoint['grid']
         thisfilename = os.path.join(status_directory,f'{database}.json')
         if os.path.isfile(thisfilename):
@@ -386,16 +408,18 @@ def write_to_db():
         else:    
             db_status = {}
             db_status['measurements'] = {}
-
-        mes = str(latest_datapoint['measurement'])
+            db_status['measurements'][mes] = {}
+        
         fields = latest_datapoint['fields']
         fields.update({'time':int(latest_datapoint['time']*1000)})
-        db_status['measurements'][mes] = fields
+        if iface:
+            fields.update({'last_seen_{}'.format(iface):int(latest_datapoint['time']*1000)})
+        #db_status['measurements'][mes] = fields
+        if mes not in db_status['measurements'].keys():
+            db_status['measurements'][mes] = {}
+        db_status['measurements'][mes].update(fields)
         with open(thisfilename,'w') as file:
             json.dump(db_status,file)
-
-
-
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
@@ -450,8 +474,8 @@ def write_sensor_data_to_db():
         #    f.write("\n")
         #    f.write('Error during writing process')
         #    f.write(str(e))
-        print('\nError during writing process')
-        print(str(e))
+        #print('\nError during writing process')
+        #print(str(e))
         raise
 
     return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
@@ -459,11 +483,13 @@ def write_sensor_data_to_db():
 @app.route('/api/flexibilities/available',methods=['GET'])
 def get_available_flexibilities():
     status={}
+    t0=time.time()
     flexdb="Flexibilities"
     CLIENT.switch_database(flexdb)
     for flextype in [d['name'] for d in CLIENT.get_list_measurements()]:
         try:
-            result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip', epoch='ms')
+            result = CLIENT.query('SELECT LAST(settings),ip,flexname,* FROM "'+flextype+'" GROUP BY ip', epoch='ms')
+            #result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip', epoch='ms')
             result = list(result.get_points())
             
             for res in result:
@@ -476,8 +502,10 @@ def get_available_flexibilities():
                 except:
                     pass
             status[flextype] = result 
-        except:
+        except Exception as e:
+            #print(str(e))
             pass
+    #print("Query time for available fex: {}".format(time.time()-t0))
     return jsonify({'status':status})
 
 @app.route('/api/flexibilities/status',methods=['GET'])
@@ -485,23 +513,27 @@ def get_status_flexibilities():
     status={}
     flexdb="Flexibilities"
     CLIENT.switch_database(flexdb)
+    t0=time.time()
     for flextype in [d['name'] for d in CLIENT.get_list_measurements()]:
         try:
-            result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip,flexname', epoch='ms')
+            result = CLIENT.query('SELECT LAST(settings),ip,flexname,* FROM "'+flextype+'" GROUP BY ip,flexname', epoch='ms')
+            #result = CLIENT.query('SELECT LAST(ip),* FROM (SELECT *,ip,flexname from "'+flextype+'" ) GROUP BY ip,flexname', epoch='ms')
             result = list(result.get_points())
             
             for res in result:
-                try:
-                    
+                try:                   
                     res['settings']=json.loads(json.loads(res['settings']))
                     last=res.pop('last')
                     ggp=res['settings'].pop('gridguard_params')
                     cs=res['settings'].pop('centralserver')                    
-                except:
+                except Exception as e:
+                    #print(str(e))
                     pass
             status[flextype] = result 
-        except:
+        except Exception as e:
+            #print(str(e))
             pass
+    #print("Query time for available fex: {}".format(time.time()-t0))
     return jsonify({'status':status})
 
 @app.route('/api/status', methods=['GET'])
@@ -566,12 +598,13 @@ def get_status():
                     #status['putting_in_dict_for_' + location] = time.time() - t6
                 except:
                     pass
-            loadingtime = time.time() - t11        
+            loadingtime = time.time() - t11
             status['toal_time_for_db_querys'] += loadingtime
             number_of_db_querys+= 1
         status[f'total_time_for_{db}'] = time.time() - t1
     status['total_time_databases'] = time.time() - t0
-    status['average_time_for_db_querys'] = status['toal_time_for_db_querys'] / number_of_db_querys
+    if number_of_db_querys > 0:
+        status['average_time_for_db_querys'] = status['toal_time_for_db_querys'] / number_of_db_querys
     status['average_time_for_json_loads'] = status['total_time_for_json_loads'] / number_of_json_loads
     return jsonify({'status':status})
 

@@ -13,7 +13,7 @@ export function colormap(i) {
 }
 
 export function parseTimeDelta(seconds) {
-    var text = '- s';
+    var text = '??? s';
 
     if (seconds <= 60) {
         text = seconds.toFixed(1) + ' s';

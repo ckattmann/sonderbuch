@@ -22,7 +22,9 @@ div#status
                     .allothers I1
                     .allothers I2
                     .allothers I3
-                    .allothers Last Status
+                    .statustimes Last Status
+                    .statustimes Last Status LTE
+                    .statustimes Last Status ETH
                 each location, location_id in desc.measurements
                     .gridrow(id=location_id.replace(/\s/g, '')+'-'+ gridname.replace(/\s/g, ''))
                         .firstct.location_id #{location_id}
@@ -32,4 +34,6 @@ div#status
                         .allothers.I1 #{location.I1}
                         .allothers.I2 #{location.I2}
                         .allothers.I3 #{location.I3}
-                        .allothers.timeSinceLastStatus #{location.timeSinceLastStatusText} ago
+                        .statustimes.LastStatus #{location.timeSinceLastStatusText} ago
+                        .statustimes.StatusLTE #{location.timeSinceLastStatusLTEText} ago
+                        .statustimes.StatusETH #{location.timeSinceLastStatusETHText} ago
